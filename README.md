@@ -1,33 +1,34 @@
-# Torn Player Search
+# Torn Mug Finder
 
-An advanced player search for [Torn City](https://www.torn.com), built on the official Torn API v2 Hall of Fame and player profile endpoints.
+Find players worth mugging in [Torn City](https://www.torn.com): people who just made sales and probably haven't banked the cash yet, and whom you can actually beat.
 
 **Live:** https://geotehnub.github.io/torn-player-search/
 
-## Features
+## How it works
 
-- **Scan the Hall of Fame** by any category (Networth, Level, Awards, Working stats, …), or use **Level band** mode to jump straight to your level range with a binary search.
-- **Free filters** from HoF data (no extra API calls): level, time since last action, account age, faction, name, networth.
-- **Detailed lookup** (1 call per player, cached): job / company type, position, company stars, current status, donator, property.
-- **Battle stat estimates**: a free rank-based bracket (the TornTools method: rank minus level/crimes/networth triggers), plus optional [FFScouter](https://ffscouter.com/) estimates and Fair Fight (205 players per request) for your registered key. Filter by estimated stats and FF.
-- **Watchlist** with notes, hide players, import/export.
-- **Saved presets** and one-click quick filters (Active < 24h, Inactive 30d+, Factionless, Networth ≥ 1b, …).
-- Faction name resolution, quick links (attack, message, trade, bazaar, add friend), CSV export, copy IDs, column toggles.
-- Results, lookups and settings persist between visits. "Continue" resumes a scan where it stopped.
-- Shortcuts: `Ctrl+Enter` scan · `Esc` stop · `/` focus name filter.
+A mug takes a cut (about 5–10%) of the cash a player is **carrying**, so no public data shows a wallet directly. The tool looks for the next best thing: fresh income that hasn't been banked.
 
-## API key & Torn API ToS
+1. **Find players** from one of five sources:
+   - players active right now (Torn's user search, 25 per call)
+   - this week's top-earning and busiest bazaars (1 call, up to 80 sellers)
+   - everyone in your level range (Level Hall of Fame)
+   - the richest players (Net worth Hall of Fame)
+   - a faction's members (about 100 per call)
+2. **Check them.** One call per player covers status, job, bazaar and dated trading stats. Players who sold in the last week get one extra call for their weekly sales amount.
+3. **Mug score (0–100).** It combines how recent their last sale was, how much they sold this week, whether their bazaar is open, whether they're idle, 7★ Clothing Store mug protection (−75%), and your chance of winning (FFScouter Fair Fight, or a rank-based stat estimate).
+4. **Watch the best.** Star players and press *Start watching*. They're re-checked about every 30 s while the page is open. You're alerted (sound and optional desktop notification) when their bazaar stock drops or they become attackable. Alerts only link to the attack page; you always click it yourself.
+
+## Torn API ToS
 
 | | |
 |---|---|
 | **Data storage** | Only in your own browser (localStorage + IndexedDB). There is no server. |
-| **Data sharing** | None. The page only talks to `api.torn.com` (and `ffscouter.com` if you opt in). |
-| **Purpose of use** | Personal player search over public Hall of Fame / profile data. |
+| **Data sharing** | None. The page talks to `api.torn.com` (and `ffscouter.com` if you use Fair Fight). |
+| **Purpose of use** | Personal gain: finding mugging targets from public data. |
 | **Key storage & sharing** | Stored locally in your browser only if you tick "Remember". Sent only to Torn's API (and FFScouter, if you use it). |
 | **Key access level** | **Public** is enough. Please use a Public key. |
-| **FFScouter (optional)** | Only if you enter an FFScouter key: that key and the relevant player IDs are sent to ffscouter.com under their Data Policy & Terms. |
 
-Rate limiting: the tool never makes more than your chosen budget of calls in any 60-second window (default 80/min, hard cap 100/min, Torn's per-user limit). It backs off on "too many requests" and stops and forgets the key on invalid-key errors.
+Rate limiting: the tool never makes more than your chosen budget of calls in any 60-second window (default 80/min, hard cap 100/min, Torn's per-user limit). Watching uses at most half of that budget. It never fetches torn.com pages, never opens the attack page and never attacks on its own.
 
 ## Running locally
 
