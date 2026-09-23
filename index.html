@@ -1021,7 +1021,9 @@ function baseFilter() {
   };
 }
 
-function detailFilter() {
+// optimistic = true: data a detail lookup would fill in (job, status, networth, rank estimate) counts as
+// "could still match", so we can pick who to look up. Fair Fight only comes from FFScouter, so it stays strict.
+function detailFilter(optimistic = false) {
   const f = {
     jobs: new Set([...$('fJob').selectedOptions].map(o => o.value)), pos: $('fPos').value.trim().toLowerCase(),
     stars: numOrNull('fStars'), statuses: new Set([...document.querySelectorAll('#fStatus input:checked')].map(i => i.value)),
@@ -1034,12 +1036,16 @@ function detailFilter() {
   const statsSet = f.bsMin != null || f.bsMax != null;
   const ffSet = f.ffMin != null || f.ffMax != null;
   const fn = r => {
-    if (f.nwSet && r.networth == null) return false;     // networth filter needs a known value
+    const unknownOk = optimistic && !r.enriched;
+    if (f.nwSet && r.networth == null && !unknownOk) return false;     // networth filter needs a known value
     if (statsSet) {                                      // keep players whose estimate overlaps the range
       const s = statRange(r);
-      if (!s) return false;
-      if (f.bsMin != null && s.max < f.bsMin) return false;
-      if (f.bsMax != null && s.min > f.bsMax) return false;
+      if (!s && unknownOk) { /* lookup may give a rank estimate */ }
+      else if (!s) return false;
+      else {
+        if (f.bsMin != null && s.max < f.bsMin) return false;
+        if (f.bsMax != null && s.min > f.bsMax) return false;
+      }
     }
     if (ffSet) {
       const ff = r.ffs ? r.ffs.ff : null;
@@ -1048,7 +1054,7 @@ function detailFilter() {
       if (f.ffMax != null && ff > f.ffMax) return false;
     }
     if (!active) return true;
-    if (!r.enriched) return false;
+    if (!r.enriched) return optimistic;
     if (f.jobs.size && !f.jobs.has(r.jobKey)) return false;
     if (f.pos && !String(r.position || '').toLowerCase().includes(f.pos)) return false;
     if (f.stars != null && (r.stars == null || r.stars < f.stars)) return false;
@@ -1058,17 +1064,16 @@ function detailFilter() {
     if (f.prop && !String(r.property || '').toLowerCase().includes(f.prop)) return false;
     return true;
   };
-  fn.needsLookup = r => (active || (f.nwSet && r.networth == null) || (statsSet && !statRange(r))) && !cacheFresh(r.id);
   fn.active = active || f.nwSet || statsSet || ffSet;
   return fn;
 }
 
-// Players the "Look up details" button would fetch right now.
+// Players the "Look up details" button would fetch right now: everyone who matches (or could match,
+// once their details are known) the current filters and doesn't have fresh details yet.
 function lookupCandidates() {
-  const b = baseFilter(), d = detailFilter();
-  const lookAll = !d.active || $('fView').value === 'watch';
+  const b = baseFilter(), d = detailFilter(true);
   const out = [];
-  for (const r of rows.values()) if (b(r) && (lookAll ? !cacheFresh(r.id) : d.needsLookup(r))) out.push(r);
+  for (const r of rows.values()) if (!cacheFresh(r.id) && b(r) && d(r)) out.push(r);
   return out;
 }
 function ffsCandidates() {
