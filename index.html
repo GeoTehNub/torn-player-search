@@ -501,23 +501,15 @@
     <section class="dlg-section">
       <h3>Torn API key</h3>
       <p>A <b>Public</b> key is all this tool needs. Create one under Torn → Preferences → API Keys.</p>
-      <p id="sharedNote" class="muted" hidden>No key yet? The tool uses shared Public keys donated by other players until you add yours. They're split between everyone, so your own key is faster (up to 100 calls/min instead of 50) and needed for <b>Use my level</b>.</p>
+      <p id="sharedNote" class="muted" hidden>No key yet? The tool uses shared Public keys donated by other players until you add yours. They're shared by everyone, so your own key is faster (up to 100 calls/min instead of 50). You also need your own key for <b>Use my level</b>.</p>
       <div class="inline">
         <input type="password" id="apiKey" placeholder="16-character key" autocomplete="off" aria-label="Torn API key" spellcheck="false">
         <button class="btn primary" id="saveKey" type="button">Save key</button>
       </div>
       <div id="keyInfo" class="keystate" role="status"></div>
+      <label class="check"><input type="checkbox" id="shareKey" checked> Share my key with players who don't have one</label>
+      <p class="muted">When this is ticked, saving your key also donates it to the site's shared key pool. The site's server then uses it to make Torn calls for visitors without a key. Only <b>Public Only</b> keys are shared: they can see only what's already on player profiles. Your key is stored on that server and never shown to anyone. Calls made with it count toward your 100 calls/min limit. Untick this to stop sharing, or delete the key in Torn anytime.</p>
       <label class="check"><input type="checkbox" id="rememberKey" checked> Remember my keys in this browser</label>
-    </section>
-
-    <section class="dlg-section">
-      <h3>Donate a key</h3>
-      <p>Help players who don't have a key yet by donating a <b>Public Only</b> key. Make a new one just for this under Torn → Preferences → API Keys, so you can delete it anytime to stop donating. Calls made with it count toward your 100/min limit, and it will be visible to anyone who uses the site. Only Public keys are accepted: they can read only what's already on player profiles.</p>
-      <div class="inline">
-        <input type="password" id="donateKey" placeholder="16-character Public key" autocomplete="off" aria-label="Key to donate" spellcheck="false">
-        <button class="btn" id="donateBtn" type="button">Check &amp; donate</button>
-      </div>
-      <div id="donateInfo" class="keystate" role="status"></div>
     </section>
 
     <section class="dlg-section">
@@ -591,7 +583,6 @@
 
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="keys.js"></script>
 <script>
 'use strict';
 const API = 'https://api.torn.com/v2';
@@ -601,8 +592,8 @@ const icon = name => `<svg class="i" aria-hidden="true"><use href="#i-${name}"/>
 
 // ---------- constants ----------
 const DEFAULT_RPM = 80;
-const SHARED_RPM = 50;
-const DONATE_TO = 4218543;                // key donations are sent by Torn message to this player (the site owner)                    // per-browser cap on shared keys, so one visitor can't use up everyone's limit
+const SHARED_RPM = 50;                    // per-browser cap on shared keys, so one visitor can't use up everyone's limit
+const POOL = 'https://torn-key-pool.REPLACE.workers.dev';   // shared key pool server (Cloudflare Worker)
 const FFS_API = 'https://ffscouter.com/api/v1';
 const FFS_BATCH = 205;
 const CLOTHING_STORE = 5;                 // company type id; 7★ gives employees 75% mug protection
@@ -663,22 +654,34 @@ let sortKey = 'score', sortDir = -1;
 let cursor = null;                           // where "Find more" resumes
 let alerts = [];                             // newest first
 
-// Shared Public keys donated by players (keys.js, generated from the private key pool by rotate.mjs).
-// Used only when you haven't added your own key. Calls rotate through them; a key Torn rejects is dropped
-// for this session, and a key that hits the rate limit rests for a minute.
-const shared = {
-  keys: (Array.isArray(window.SHARED_KEYS) ? window.SHARED_KEYS : []).filter(k => /^[A-Za-z0-9]{16}$/.test(k)),
-  i: Math.floor(Math.random() * 1000), dead: new Set(), coolUntil: {}
-};
-const hasKey = () => !!apiKey || shared.keys.some(k => !shared.dead.has(k));
-function nextSharedKey() {
-  const alive = shared.keys.filter(k => !shared.dead.has(k));
-  if (!alive.length) return '';
-  const now = Date.now(), ready = alive.filter(k => (shared.coolUntil[k] || 0) <= now);
-  if (ready.length) return ready[shared.i++ % ready.length];
-  const k = alive.reduce((a, b) => shared.coolUntil[a] <= shared.coolUntil[b] ? a : b);
-  limiter.pauseUntil = Math.max(limiter.pauseUntil, shared.coolUntil[k]);   // every key is resting: wait for the first one
-  return k;
+
+// Shared key pool: players who save a Public key donate it (unless they untick "Share my key"). Visitors without
+// a key make their calls through the pool server, which picks a donated key; the keys never reach the browser.
+let poolKeys = 0;                            // how many donated keys the pool has
+let shareKey = store.get('tps_share', true);
+const hasKey = () => !!apiKey || poolKeys > 0;
+async function poolPost(path, key) {
+  const r = await fetch(`${POOL}${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key }) });
+  return r.json();
+}
+async function refreshPool() {
+  try { poolKeys = (await (await fetch(`${POOL}/status`)).json()).keys || 0; } catch { poolKeys = 0; }
+  $('sharedNote').hidden = !poolKeys;
+  updateKeyBadge(); render();
+}
+// Donate or withdraw the saved key to match the "Share my key" box. Returns a sentence for the key status line.
+async function syncShare() {
+  if (!apiKey || !/public only/i.test(keyType)) return apiKey && keyType ? ' It isn’t shared, since only Public Only keys can be.' : '';
+  try {
+    if (shareKey) {
+      const d = await poolPost('/donate', apiKey);
+      if (d.error) return ` It couldn’t be shared (${d.error}).`;
+      poolKeys = d.keys; updateKeyBadge();
+      return ' Thanks for sharing it with other players!';
+    }
+    await poolPost('/undonate', apiKey);
+    return ' It isn’t shared with other players.';
+  } catch { return ' The shared key server couldn’t be reached, so sharing will be retried next time you save.'; }
 }
 
 class StopError extends Error {}
@@ -729,23 +732,26 @@ setInterval(() => {
 // ---------- Torn API ----------
 async function api(path, params = {}, bg = false) {
   for (let attempt = 0; attempt < 4; attempt++) {
-    const own = !!apiKey, key = apiKey || nextSharedKey();
-    if (!key) throw new FatalApiError(shared.keys.length ? 'The shared keys aren’t working right now. Add your own Torn API key in Settings.' : 'Add your Torn API key in Settings first.');
+    const own = !!apiKey;
+    if (!own && !poolKeys) throw new FatalApiError('Add your Torn API key in Settings first.');
     await limiter.take(bg);
-    const q = new URLSearchParams({ ...params, key, comment: COMMENT });
+    const q = new URLSearchParams({ ...params, comment: COMMENT });
+    if (own) q.set('key', apiKey);
     let data;
-    try { data = await (await fetch(`${API}${path}?${q}`)).json(); }
+    try { data = await (await fetch(own ? `${API}${path}?${q}` : `${POOL}/v2${path}?${q}`)).json(); }
     catch (e) { log(`Network error on ${path}: ${e.message}. Retrying…`, 'warn'); await sleep(2000 * (attempt + 1)); continue; }
     if (!data.error) return data;
     const { code, error } = data.error;
     if ([2, 10, 13, 18].includes(code)) {        // bad/paused/disabled key: stop, repeated invalid-key calls risk an IP ban
-      if (!own) { shared.dead.add(key); log(`A shared key stopped working (${error}). Switching to the next one.`, 'warn'); updateKeyBadge(); attempt--; continue; }
+      if (!own) { await sleep(1000); continue; }  // the pool drops bad keys itself
       forgetKey();
       throw new FatalApiError(`Torn rejected your API key (${error}). It has been removed; add a working key in Settings.`);
     }
     if ([8, 9, 14].includes(code)) throw new FatalApiError(`Torn's API is unavailable right now (${error}).`);
     if (code === 16) throw new FatalApiError(`Your key's access level is too low (${error}).`);
-    if (code === 5 && !own) { shared.coolUntil[key] = Date.now() + 61000; log('A shared key hit Torn’s rate limit (other people use it too). Switching keys; your own key avoids this.', 'warn'); continue; }
+    if (code === -1 && !own) { poolKeys = 0; updateKeyBadge(); throw new FatalApiError('No shared keys are available right now. Add your own Torn API key in Settings.'); }
+    if (code === -2 && !own) throw new FatalApiError(`${error} Add your own key in Settings.`);
+    if (code === 5 && !own) { limiter.pauseUntil = Date.now() + 61000; log(`The shared keys are busy (${error}) Pausing 60s; your own key avoids this.`, 'warn'); continue; }
     if (code === 5) { limiter.pauseUntil = Date.now() + 61000; log('Torn says too many requests. Pausing 60s; other tools may be using your limit.', 'warn'); continue; }
     if (code === 17 || code === 0) { await sleep(3000); continue; }
     return data;                                // e.g. 6 incorrect ID: caller handles
@@ -779,31 +785,9 @@ async function saveKey() {
     el.textContent = /full|limited/i.test(keyType)
       ? `Connected (${keyType}). This tool only needs a Public key, so consider making a separate Public one for it.`
       : `Connected (${keyType}). You're ready to find targets.`;
+    el.textContent += await syncShare();
   } catch (e) { el.className = 'keystate bad'; el.textContent = e.message; }
   updateKeyBadge(); render();
-}
-
-// Donations: check the key is Public Only, then open a Torn message to the owner with the key copied, ready to paste.
-async function donateKey() {
-  const k = $('donateKey').value.trim(), el = $('donateInfo');
-  if (!/^[A-Za-z0-9]{16}$/.test(k)) { el.className = 'keystate bad'; el.textContent = 'That doesn’t look like a key. Torn keys are 16 letters and numbers.'; return; }
-  if (shared.keys.includes(k)) { el.className = 'keystate ok'; el.textContent = 'This key is already being shared. Thank you!'; return; }
-  el.className = 'keystate'; el.textContent = 'Checking key…';
-  let d;
-  try { d = await (await fetch(`${API}/key/info?${new URLSearchParams({ key: k, comment: COMMENT })}`)).json(); }
-  catch (e) { el.className = 'keystate bad'; el.textContent = `Couldn’t reach Torn: ${e.message}`; return; }
-  if (d.error) { el.className = 'keystate bad'; el.textContent = `Torn rejected this key (${d.error.error}).`; return; }
-  const type = d.info?.access?.type || '';
-  if (!/public/i.test(type)) { el.className = 'keystate bad'; el.textContent = `This is a ${type || 'non-Public'} key. Only Public Only keys can be donated; make a new Public one for this.`; return; }
-  const msg = `Mug Finder key donation: ${k} (${type}). I agree to it being shared on the site until I delete it.`;
-  let copied = false;
-  try { await navigator.clipboard.writeText(msg); copied = true; } catch {}
-  window.open(`https://www.torn.com/messages.php#/p=compose&XID=${DONATE_TO}`, '_blank', 'noopener');
-  el.className = 'keystate ok';
-  el.textContent = copied
-    ? 'Key checked (Public Only). A Torn message is open: paste the copied text and send it. Thank you!'
-    : `Key checked (Public Only). A Torn message is open: send this text: ${msg}`;
-  $('donateKey').value = '';
 }
 
 // ---------- formatting ----------
@@ -1759,7 +1743,7 @@ $('toggleFilters').addEventListener('click', () => { const open = document.body.
 
 const onFormChange = e => {
   if (!e.target.closest('#filters, .scanbar, #settings')) return;
-  if (['apiKey', 'ffsKey', 'donateKey'].includes(e.target.id)) return;
+  if (['apiKey', 'ffsKey', 'shareKey'].includes(e.target.id)) return;
   if (e.target.id === 'source') { syncSource(); cursor = null; }
   if (e.target.id === 'watchNotify' && e.target.checked && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission();
   saveForm(); scheduleRender();
@@ -1767,8 +1751,10 @@ const onFormChange = e => {
 document.addEventListener('input', onFormChange);
 document.addEventListener('change', onFormChange);
 $('saveKey').addEventListener('click', saveKey);
-$('donateBtn').addEventListener('click', donateKey);
-$('donateKey').addEventListener('keydown', e => { if (e.key === 'Enter') donateKey(); });
+$('shareKey').addEventListener('change', async () => {
+  shareKey = $('shareKey').checked; store.set('tps_share', shareKey);
+  if (apiKey && keyType) { const msg = (await syncShare()).trim(); if (msg) toast(msg); }
+});
 $('apiKey').addEventListener('keydown', e => { if (e.key === 'Enter') saveKey(); });
 $('rememberKey').addEventListener('change', () => {
   if (!$('rememberKey').checked) { store.del('tps_key'); store.del('tps_ffs_key'); store.del('tps_key_type'); }
@@ -1810,9 +1796,10 @@ document.addEventListener('keydown', e => {
   saveWatch(); saveHidden();
   if (ffsKey) $('ffsKey').value = ffsKey;
   if (apiKey) { $('apiKey').value = apiKey; $('keyInfo').className = 'keystate ok'; $('keyInfo').textContent = 'Key saved in this browser.'; }
-  $('sharedNote').hidden = !shared.keys.length;
+  $('shareKey').checked = shareKey;
   updateKeyBadge();
   render();
+  refreshPool();
   checks = (await idb.get('checks')) || {};
   ffCache = (await idb.get('ffcache')) || {};
   deriveMyStats();

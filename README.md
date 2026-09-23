@@ -23,18 +23,18 @@ A mug takes a cut (about 5–10%) of the cash a player is **carrying**, so no pu
 
 | | |
 |---|---|
-| **Data storage** | Only in your own browser (localStorage + IndexedDB). There is no server. |
+| **Data storage** | Your data stays in your own browser (localStorage + IndexedDB). The only thing stored on a server is donated keys (see below). |
 | **Data sharing** | None. The page talks to `api.torn.com` (and `ffscouter.com` if you use Fair Fight). |
 | **Purpose of use** | Personal gain: finding mugging targets from public data. |
 | **Key storage & sharing** | Stored locally in your browser only if you tick "Remember". Sent only to Torn's API (and FFScouter, if you use it). |
-| **Shared keys** | Players can donate a **Public Only** key (Settings → Donate a key). Donated keys are listed in `keys.js`, which anyone can read, and are used only by visitors who haven't added their own key (max 50 calls/min per visitor). Donors can stop anytime by deleting the key in Torn. |
+| **Shared keys** | When you save a key with *Share my key* ticked (the default), a **Public Only** key is donated to the site's key pool server (a Cloudflare Worker). There it's used to make public lookups for visitors who have no key, up to 50 calls/min per visitor. It's never shown to anyone. Untick the box to withdraw it, or delete the key in Torn. Limited and Full keys are never shared. |
 | **Key access level** | **Public** is enough. Please use a Public key. |
 
 Rate limiting: the tool never makes more than your chosen budget of calls in any 60-second window (default 80/min, hard cap 100/min, Torn's per-user limit). Watching uses at most half of that budget. It never fetches torn.com pages, never opens the attack page and never attacks on its own.
 
 ## Shared keys
 
-`keys.js` is generated from a private key pool with `rotate.mjs` (`add`, `remove`, `list`, `publish`). `publish` re-checks every key with Torn, drops any that are dead or not Public Only, rewrites `keys.js`, and commits and pushes. The page rotates through the keys, skips ones Torn rejects, and rests a key for a minute when it hits the rate limit.
+Visitors without a key make their calls through the key pool server, which rotates through the donated keys. It skips a key for a minute when it hits Torn's rate limit, drops keys Torn rejects, and re-checks every key daily. It only allows the public lookups the site uses. The server code lives in a private repo.
 
 ## Running locally
 
