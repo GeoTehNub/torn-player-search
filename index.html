@@ -942,7 +942,7 @@ function mugScore(r) {
 }
 
 const isCheckFresh = id => { const c = checks[id]; return c && Date.now() - c.t < (+$('checkTtl').value || 30) * 60000; };
-const ffsFresh = id => ffCache[id] && Date.now() - ffCache[id].t < 6 * 3600e3;
+const ffsFresh = id => { const c = ffCache[id]; return !!c && Date.now() - c.t < (c.ff != null ? 6 * 3600e3 : 30 * 60e3); };
 
 // ---------- filters ----------
 function readFilters() {
@@ -957,7 +957,7 @@ function readFilters() {
   };
 }
 // optimistic: a not-yet-checked player "could match" anything a check would reveal (used to pick who to check).
-function matches(r, f, optimistic = false) {
+function matches(r, f, optimistic = false, ignoreStrength = false) {
   if (f.view === 'watch' ? !watch[r.id] : f.view === 'hidden' ? !hidden[r.id] : (hidden[r.id] || r.stub)) return false;
   const unknown = !r.checkedAt;
   const may = unknown && optimistic;
@@ -974,10 +974,12 @@ function matches(r, f, optimistic = false) {
   if (f.noClothing && (r.clothing ? r.clothingStars >= 7 : false)) return false;
   // strength
   const ff = r.ffs?.ff;
+  if (!ignoreStrength) {
   if (f.ffMax != null && ff != null && ff > f.ffMax) return false;
   const s = statRange(r);
   if (f.bsMax != null && s && s.min > f.bsMax) return false;
   if (f.knownOnly && ff == null && !s && !may) return false;
+  }
   // cash (needs a check)
   if (f.nwMin != null && r.networth != null && r.networth < f.nwMin) return false;   // networth is known free from the net worth list
   if (f.nwMin != null && r.networth == null && !may) return false;
@@ -999,9 +1001,14 @@ function checkCandidates() {
   const pri = r => (r.hasBazaar ? 2 : 0) + (r.bzWeeklyIncome ? 2 : 0) + (r.online && r.online !== 'Offline' ? 1 : 0);
   return out.sort((a, b) => pri(b) - pri(a));
 }
-function ffsCandidates() {
+// Players to get Fair Fight for. Strength filters are ignored here, since they need this data to work.
+// force = the user asked for a refresh, so re-ask for everyone shown who still has no number.
+function ffsCandidates(force = false) {
   const f = readFilters(), out = [];
-  for (const r of rows.values()) if (!ffsFresh(r.id) && matches(r, f, true)) out.push(r.id);
+  for (const r of rows.values()) {
+    if (!matches(r, f, true, true)) continue;
+    if (!ffsFresh(r.id) || (force && r.ffs?.ff == null)) out.push(r.id);
+  }
   return out;
 }
 
@@ -1053,7 +1060,8 @@ const COLS = [
       const w = winChance(r), s = statRange(r);
       const ff = r.ffs?.ff != null ? `FF ${r.ffs.ff.toFixed(2)}` : '';
       const detail = [ff, s ? s.label : ''].filter(Boolean).join(' · ');
-      return `<div class="two-line"><span class="win-${w.label}">${w.label}</span><small>${esc(detail || 'Get Fair Fight to know')}</small></div>`;
+      const why = detail || (!ffsKey ? 'Set up Fair Fight' : r.ffs ? 'No FFScouter estimate' : 'Fair Fight not fetched');
+      return `<div class="two-line"><span class="win-${w.label}">${w.label}</span><small>${esc(why)}</small></div>`;
     } },
   { key: 'networth', label: 'Net worth', num: true, render: r => r.networth == null ? '<span class="muted">–</span>' : fmtMoney(r.networth) },
   { key: 'bzLife', label: 'Bazaar income', num: true, get: r => r.bzRevLife ?? null, render: r => incomeCell(r.bzRevLife, r.bzSalesLife, r.bzRev7d, r.bzRevDays, 'bazaar') },
@@ -1165,9 +1173,10 @@ function updateActionButtons() {
   if (!ffsKey) { $('ffsLabel').textContent = 'Set up Fair Fight'; $('ffsBtn').disabled = false; $('ffsBtn').title = 'Add a key registered at FFScouter in Settings.'; }
   else {
     const fc = ffsCandidates().length;
-    $('ffsLabel').textContent = fc ? `Get Fair Fight (${plural(Math.ceil(Math.min(fc, FFS_BATCH * 30) / FFS_BATCH), 'request')})` : 'Fair Fight up to date';
-    $('ffsBtn').disabled = !fc;
-    $('ffsBtn').title = fc ? `${fc.toLocaleString()} players, sent to ffscouter.com. Doesn't use your Torn API budget.` : '';
+    const missing = fc || ffsCandidates(true).length;
+    $('ffsLabel').textContent = fc ? `Get Fair Fight (${plural(Math.ceil(Math.min(fc, FFS_BATCH * 30) / FFS_BATCH), 'request')})` : missing ? 'Retry missing Fair Fight' : 'Fair Fight up to date';
+    $('ffsBtn').disabled = !missing;
+    $('ffsBtn').title = fc ? `${fc.toLocaleString()} players, sent to ffscouter.com. Doesn't use your Torn API budget.` : missing ? `Ask FFScouter again for ${missing.toLocaleString()} players it had no estimate for.` : '';
   }
   const wn = Object.keys(watch).length;
   $('watchBtn').disabled = !wn && !watching;
@@ -1425,10 +1434,10 @@ async function checkPlayers() {
 }
 
 // ---- FFScouter ----
-async function fetchFfs() {
+async function fetchFfs(force = false) {
   if (!ffsKey) throw new FatalApiError('Add a key registered at FFScouter in Settings first.');
-  const ids = ffsCandidates().slice(0, FFS_BATCH * 30);
-  if (!ids.length) { log('Fair Fight: everyone shown already has a fresh number.'); return; }
+  const ids = ffsCandidates(force).slice(0, FFS_BATCH * 30);
+  if (!ids.length) { log('Fair Fight: everyone shown already has a number.'); toast('Everyone shown already has a Fair Fight'); return; }
   const batches = Math.ceil(ids.length / FFS_BATCH);
   for (let i = 0, n = 0; i < ids.length; ) {
     if (stopFlag) throw new StopError();
@@ -1446,16 +1455,23 @@ async function fetchFfs() {
         continue;
       }
       if ([1, 2, 6].includes(code)) throw new FatalApiError('FFScouter doesn’t recognise this key. Register it at ffscouter.com, then try again.');
+      if (code === 4010 || code === 4011) throw new FatalApiError(`FFScouter: ${data.error || 'this account or faction is banned from FFScouter.'}`);
       throw new Error(`FFScouter error${code ? ` (code ${code})` : ''}: ${data && data.error || 'unexpected response'}`);
     }
     const now = Date.now(), got = new Set();
-    for (const e of data) { got.add(e.player_id); ffCache[e.player_id] = { t: now, ff: e.fair_fight ?? null, bs: e.bs_estimate ?? null, human: e.bs_estimate_human || null, upd: e.last_updated || null }; }
+    for (const e of data) {
+      got.add(e.player_id);
+      const alt = e.available_estimates || {};
+      const best = [e, alt.premium, alt.spies, alt.bss].find(x => x && x.fair_fight != null) || e;
+      ffCache[e.player_id] = { t: now, ff: best.fair_fight ?? null, bs: best.bs_estimate ?? e.bs_estimate ?? null, human: best.bs_estimate_human || e.bs_estimate_human || null, upd: best.last_updated || e.last_updated || null };
+    }
     for (const id of batch) { if (!got.has(id)) ffCache[id] = { t: now, ff: null, bs: null }; const r = rows.get(id); if (r) r.ffs = ffCache[id]; }
     i += FFS_BATCH; n++;
     setProgress(n / batches); scheduleRender();
     if (i < ids.length) await sleep(1000);
   }
-  log(`Fair Fight: got ${ids.filter(id => ffCache[id]?.ff != null).length.toLocaleString()} of ${ids.length.toLocaleString()} players.`);
+  const gotN = ids.filter(id => ffCache[id]?.ff != null).length;
+  log(`Fair Fight: got ${gotN.toLocaleString()} of ${ids.length.toLocaleString()} players${gotN < ids.length ? `. FFScouter has no estimate yet for the other ${(ids.length - gotN).toLocaleString()}` : ''}.`, gotN < ids.length ? 'warn' : '');
 }
 
 async function useMyLevel() {
@@ -1684,7 +1700,7 @@ $('rpm').addEventListener('change', () => { $('rpm').value = budget(); });
 $('scanBtn').addEventListener('click', () => runTask('Find players', findFn()));
 $('continueBtn').addEventListener('click', () => { const fn = continueFn(); if (fn) runTask('Find more', fn); });
 $('checkBtn').addEventListener('click', () => runTask('Check', checkPlayers));
-$('ffsBtn').addEventListener('click', () => { if (!ffsKey) { openSettings(); $('ffsKey').focus(); return; } runTask('Fair Fight', fetchFfs, false); });
+$('ffsBtn').addEventListener('click', () => { if (!ffsKey) { openSettings(); $('ffsKey').focus(); return; } runTask('Fair Fight', () => fetchFfs(true), false); });
 $('myLevelBtn').addEventListener('click', () => runTask('Your level', useMyLevel));
 $('stopBtn').addEventListener('click', () => { stopFlag = true; setStatus('Stopping…'); });
 $('resetFilters').addEventListener('click', resetFilters);
