@@ -374,7 +374,7 @@
         <div>
           <label class="field" for="fFfMax">Fair Fight, at most</label>
           <input type="number" id="fFfMax" step="0.05" min="1" max="3" placeholder="Any" inputmode="decimal">
-          <span class="field-note">From FFScouter. 1 = far weaker than you, 3 = about as strong or stronger.</span>
+          <span class="field-note">1 = far weaker than you, 2 = about a third of your stats, 3 or more = about as strong as you or stronger. From FFScouter, or estimated when it has no number.</span>
         </div>
         <div>
           <label class="field" for="fBsMax">Estimated stats, at most</label>
@@ -519,8 +519,8 @@
       <label class="check"><input type="checkbox" id="ffsAuto" checked> Get Fair Fight automatically after checking players</label>
       <div>
         <label class="field" for="myStats">My total battle stats (optional)</label>
-        <input type="text" id="myStats" placeholder="e.g. 12m" autocomplete="off">
-        <span class="field-note">Used to judge fights when FFScouter has no number, by comparing with the rank-based estimate.</span>
+        <input type="text" id="myStats" placeholder="Worked out automatically, or e.g. 12m" autocomplete="off">
+        <span class="field-note" id="myStatsNote">Used to estimate Fair Fight when FFScouter has no number for a player.</span>
       </div>
     </section>
 
@@ -877,7 +877,8 @@ function rankEstimate(r) {
   if (r.lastAction && new Date(r.lastAction * 1000).getUTCFullYear() <= 2015) return null;
   const t = RANK_TRIGGERS.level.filter(x => x <= r.level).length + RANK_TRIGGERS.crimes.filter(x => x <= r.crimes).length + RANK_TRIGGERS.networth.filter(x => x <= r.networth).length;
   const i = r.rankNum - t - 1;
-  return i >= 0 && i < STAT_BRACKETS.length ? i : null;
+  if (i < 0) return null;
+  return Math.min(i, STAT_BRACKETS.length - 1);   // more stat triggers than exist still means the top bracket
 }
 function statRange(r) {
   if (r.ffs && r.ffs.bs != null) return { min: r.ffs.bs, max: r.ffs.bs, src: 'ffs', label: r.ffs.human || fmtCompact(r.ffs.bs) };
@@ -887,24 +888,36 @@ function statRange(r) {
   return { min: b.min, max: b.max, src: 'rank', label: '~' + b.label };
 }
 
-// Can I win? Fair Fight = 1 + 8/3 × (their stats / mine), capped at 3.
+// Fair Fight = 1 + 8/3 × (their stats / yours). FFScouter reports it uncapped, so 3+ means as strong or stronger.
+// Your own total stats: what you typed in Settings, or worked out from the FFScouter numbers we already have
+// (each one gives yours = their estimate ÷ ((FF − 1) × 3/8); the median of those is robust).
+let myStatsDerived = null;
+function deriveMyStats() {
+  const vals = [];
+  for (const c of Object.values(ffCache)) if (c && c.ff != null && c.bs && c.ff > 1.05) vals.push(c.bs / ((c.ff - 1) * 3 / 8));
+  vals.sort((a, b) => a - b);
+  myStatsDerived = vals.length >= 3 ? vals[Math.floor(vals.length / 2)] : null;
+  const note = $('myStatsNote');
+  if (note) note.textContent = myStatsDerived ? `Worked out from FFScouter: about ${fmtCompact(myStatsDerived)}. Type a number to override it.` : 'Used to estimate Fair Fight when FFScouter has no number for a player.';
+}
+const myStats = () => parseMoney($('myStats').value) || myStatsDerived;
+
+// FFScouter's Fair Fight, or an estimate from the player's rank-based stat range against your stats.
+function fairFight(r) {
+  if (r.ffs?.ff != null) return { ff: r.ffs.ff, est: false };
+  const mine = myStats(), s = statRange(r);
+  if (!mine || !s) return null;
+  const theirs = s.max === Infinity ? s.min * 3 : Math.sqrt(Math.max(s.min, 1) * s.max);
+  return { ff: 1 + (8 / 3) * theirs / mine, est: true };
+}
 function winChance(r) {
-  const ff = r.ffs?.ff;
-  if (ff != null) {
-    if (ff < 1.7) return { f: 1, label: 'Easy' };
-    if (ff < 2.35) return { f: 0.9, label: 'Likely' };
-    if (ff < 2.95) return { f: 0.55, label: 'Risky' };
-    return { f: 0.25, label: 'Unlikely' };
-  }
-  const mine = parseMoney($('myStats').value), s = statRange(r);
-  if (mine && s) {
-    const ratio = s.max / mine;
-    if (ratio < 0.25) return { f: 1, label: 'Easy' };
-    if (ratio < 0.5) return { f: 0.9, label: 'Likely' };
-    if (ratio < 1) return { f: 0.55, label: 'Risky' };
-    return { f: 0.25, label: 'Unlikely' };
-  }
-  return { f: 0.6, label: 'Unknown' };
+  const f = fairFight(r);
+  if (!f) return { f: 0.6, label: 'Unknown' };
+  const k = f.est ? 0.9 : 1;   // a little less sure when estimated
+  if (f.ff < 1.7) return { f: 1 * k, label: 'Easy' };
+  if (f.ff < 2.35) return { f: 0.9 * k, label: 'Likely' };
+  if (f.ff < 3) return { f: 0.55 * k, label: 'Risky' };
+  return { f: 0.2, label: 'Unlikely' };
 }
 
 const lifetimeIncome = r => r.bzRevLife == null && r.imRevLife == null ? null : (r.bzRevLife || 0) + (r.imRevLife || 0);
@@ -937,7 +950,8 @@ function mugScore(r) {
   const prot = r.clothing && r.clothingStars >= 7 ? 0.25 : 1;
   if (prot < 1) why.push('7★ Clothing Store: 75% mug protection');
   const w = winChance(r);
-  why.push(`Fight: ${w.label.toLowerCase()}${r.ffs?.ff != null ? ` (FF ${r.ffs.ff.toFixed(2)})` : ''}`);
+  const fv = fairFight(r);
+  why.push(`Fight: ${w.label.toLowerCase()}${fv ? ` (FF ${fv.est ? '~' + fv.ff.toFixed(1) + ', estimated' : fv.ff.toFixed(2)})` : ''}`);
   return { score: Math.round(100 * cash * idle * prot * w.f), why: why.filter(Boolean) };
 }
 
@@ -973,12 +987,12 @@ function matches(r, f, optimistic = false, ignoreStrength = false) {
   if (f.attackable && r.state && !ATTACKABLE.has(r.state) && !(optimistic && !isCheckFresh(r.id))) return false;
   if (f.noClothing && (r.clothing ? r.clothingStars >= 7 : false)) return false;
   // strength
-  const ff = r.ffs?.ff;
   if (!ignoreStrength) {
-  if (f.ffMax != null && ff != null && ff > f.ffMax) return false;
-  const s = statRange(r);
-  if (f.bsMax != null && s && s.min > f.bsMax) return false;
-  if (f.knownOnly && ff == null && !s && !may) return false;
+    const ffv = fairFight(r)?.ff;
+    if (f.ffMax != null && (ffv == null ? !may : ffv > f.ffMax)) return false;   // unknown strength can't pass a Fair Fight limit
+    const s = statRange(r);
+    if (f.bsMax != null && s && s.min > f.bsMax) return false;
+    if (f.knownOnly && ffv == null && !s && !may) return false;
   }
   // cash (needs a check)
   if (f.nwMin != null && r.networth != null && r.networth < f.nwMin) return false;   // networth is known free from the net worth list
@@ -1056,9 +1070,11 @@ const COLS = [
       return `<a href="${profileUrl(r.id)}" target="_blank" rel="noopener">${esc(displayName(r))}</a><span class="id">${r.id}</span>${prot}${sub}`;
     } },
   { key: 'level', label: 'Level', num: true },
-  { key: 'win', label: 'Can I win?', get: r => r.ffs?.ff ?? (statRange(r)?.min ?? null), render: r => {
+  { key: 'win', label: 'Can I win?', get: r => fairFight(r)?.ff ?? null, render: r => {
       const w = winChance(r), s = statRange(r);
-      const ff = r.ffs?.ff != null ? `FF ${r.ffs.ff.toFixed(2)}` : '';
+      const fv = fairFight(r);
+      const ffTxt = fv && fv.ff > 10 ? '10+' : fv ? fv.ff.toFixed(fv.est ? 1 : 2) : '';
+      const ff = fv ? (fv.est ? `FF ~${ffTxt} (est.)` : `FF ${ffTxt}`) : '';
       const detail = [ff, s ? s.label : ''].filter(Boolean).join(' · ');
       const why = detail || (!ffsKey ? 'Set up Fair Fight' : r.ffs ? 'No FFScouter estimate' : 'Fair Fight not fetched');
       return `<div class="two-line"><span class="win-${w.label}">${w.label}</span><small>${esc(why)}</small></div>`;
@@ -1470,6 +1486,7 @@ async function fetchFfs(force = false) {
     setProgress(n / batches); scheduleRender();
     if (i < ids.length) await sleep(1000);
   }
+  deriveMyStats();
   const gotN = ids.filter(id => ffCache[id]?.ff != null).length;
   log(`Fair Fight: got ${gotN.toLocaleString()} of ${ids.length.toLocaleString()} players${gotN < ids.length ? `. FFScouter has no estimate yet for the other ${(ids.length - gotN).toLocaleString()}` : ''}.`, gotN < ids.length ? 'warn' : '');
 }
@@ -1730,6 +1747,7 @@ document.addEventListener('keydown', e => {
   render();
   checks = (await idb.get('checks')) || {};
   ffCache = (await idb.get('ffcache')) || {};
+  deriveMyStats();
   const saved = await idb.get('mugrows');
   if (Array.isArray(saved)) saved.forEach(r => { if (r && r.id) rows.set(r.id, r); });
   const meta = await idb.get('mugmeta');
