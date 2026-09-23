@@ -1223,7 +1223,8 @@ function updateActionButtons() {
   const cap = Math.max(1, +$('enrichCap').value || 1);
   const n = Math.min(lc, cap);
   const mins = Math.max(1, Math.ceil(n / budget()));
-  $('enrichLabel').textContent = n ? `Look up details for ${plural(n, 'player')}` : 'Details up to date';
+  const anyRows = [...rows.values()].some(r => !r.stub) || Object.keys(watch).length;
+  $('enrichLabel').textContent = n ? `Look up details for ${plural(n, 'player')}` : anyRows ? 'Details up to date' : 'Look up details';
   $('enrichBtn').disabled = !n || !apiKey;
   $('enrichBtn').title = n ? `${plural(n, 'API call')}, about ${mins} min${lc > cap ? `. ${lc.toLocaleString()} need it; raise the limit in Settings.` : ''}` : (d.active ? 'Every matching player already has fresh details.' : 'Scan some players first.');
   $('enrichBtn').classList.toggle('primary', !!n);
