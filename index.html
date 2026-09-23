@@ -3,133 +3,306 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
 <title>Torn Player Search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* ---------- tokens ---------- */
   :root {
-    --bg: #111315; --panel: #1a1d20; --panel2: #22262a; --line: #2e3338;
-    --text: #d8dcdf; --muted: #8a939b; --accent: #7fb241; --accent2: #5d8a2c;
-    --warn: #e0a238; --bad: #d9534f; --link: #8cc4ff; --star: #f5c542;
+    --bg: #10151c;
+    --surface: #18202a;
+    --surface-2: #212b37;
+    --surface-3: #2a3645;
+    --line: #2f3c4c;
+    --text: #e9eef4;
+    --muted: #aab6c4;
+    --accent: #f0b443;
+    --accent-ink: #1c1405;
+    --accent-soft: rgba(240, 180, 67, .14);
+    --link: #8ec5ff;
+    --good: #72d38a;
+    --warn: #f3c267;
+    --bad: #ff8f85;
+    --info: #8ec5ff;
+    --focus: #8ec5ff;
+    --shadow: 0 12px 32px rgba(0, 0, 0, .45);
+    --radius: 10px;
+    --font: "IBM Plex Sans", system-ui, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    --display: "Big Shoulders Display", "IBM Plex Sans", sans-serif;
   }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #eef1f5; --surface: #ffffff; --surface-2: #f3f5f8; --surface-3: #e6eaf0; --line: #d3dae3;
+      --text: #16202b; --muted: #4c5a6a; --accent: #b87708; --accent-ink: #ffffff; --accent-soft: rgba(184, 119, 8, .12);
+      --link: #0b5fb8; --good: #1c7a37; --warn: #8a5a00; --bad: #b3261e; --info: #0b5fb8; --focus: #0b5fb8;
+      --shadow: 0 12px 32px rgba(20, 30, 45, .18);
+    }
+  }
+
+  /* ---------- base ---------- */
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 system-ui, "Segoe UI", Arial, sans-serif; }
-  header { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #0b0c0d; border-bottom: 2px solid var(--accent2); flex-wrap: wrap; }
-  header h1 { font-size: 17px; margin: 0; letter-spacing: .3px; }
-  header h1 span { color: var(--accent); }
-  header .spacer { flex: 1; }
-  main { display: grid; grid-template-columns: 330px 1fr; gap: 12px; padding: 12px 16px; }
-  main > * { min-width: 0; }
-  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
-  .panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--accent); margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
-  .panel h2 .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 400; }
-  label { display: block; color: var(--muted); font-size: 11.5px; margin: 6px 0 2px; }
-  input, select, button { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 4px; padding: 5px 7px; }
-  input:focus, select:focus { outline: 1px solid var(--accent); }
-  input[type=number] { width: 100%; }
-  input[type=text], input[type=password], select { width: 100%; }
-  input[type=checkbox] { width: auto; margin: 0 4px 0 0; vertical-align: -2px; }
-  .row { display: flex; gap: 6px; align-items: center; }
-  .row > * { flex: 1; min-width: 0; }
-  .row > .dash { flex: 0 0 auto; color: var(--muted); }
-  .row > .fixed { flex: 0 0 auto; }
-  button { cursor: pointer; background: var(--panel2); }
-  button:hover { border-color: var(--accent); }
-  button.primary { background: var(--accent2); border-color: var(--accent); color: #fff; font-weight: 600; }
-  button.primary:hover { background: var(--accent); }
-  button.danger { border-color: var(--bad); color: #ffb3b0; }
-  button.small { padding: 2px 7px; font-size: 11.5px; }
-  button:disabled { opacity: .45; cursor: not-allowed; }
-  .btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
-  .hint { color: var(--muted); font-size: 11px; margin-top: 4px; }
-  .checks { display: flex; flex-wrap: wrap; gap: 4px 10px; }
-  .checks label { display: inline-flex; align-items: center; margin: 2px 0; color: var(--text); font-size: 12px; }
-  select[multiple] { height: 150px; }
-  .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
-  .chip { font-size: 11.5px; padding: 2px 9px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line); cursor: pointer; }
-  .chip:hover { border-color: var(--accent); color: #fff; }
-  #status { font-size: 12px; color: var(--muted); }
-  #status b { color: var(--text); }
-  #rate { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 6px; }
-  #rate .meter { width: 70px; height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; }
-  #rate .meter > div { height: 100%; background: var(--accent); width: 0; transition: width .3s; }
-  .bar { height: 4px; background: var(--panel2); border-radius: 2px; overflow: hidden; margin-top: 8px; }
-  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
-  #log { max-height: 90px; overflow: auto; font: 11px/1.4 ui-monospace, Consolas, monospace; color: var(--muted); margin-top: 6px; }
-  #log .err { color: var(--bad); } #log .warn { color: var(--warn); }
-  .tablewrap { overflow: auto; max-height: calc(100vh - 170px); border: 1px solid var(--line); border-radius: 6px; }
-  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
-  th, td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
-  th { position: sticky; top: 0; background: #202428; cursor: pointer; user-select: none; font-weight: 600; color: var(--muted); z-index: 1; }
-  th.nosort { cursor: default; }
-  th:hover { color: var(--text); }
-  th.sorted { color: var(--accent); }
-  tbody tr:hover { background: #1e2226; }
-  tbody tr.watched { background: rgba(245, 197, 66, .05); }
-  td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  td.note { max-width: 180px; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
-  a { color: var(--link); text-decoration: none; } a:hover { text-decoration: underline; }
-  .ico { cursor: pointer; color: var(--muted); padding: 0 3px; font-size: 13px; background: none; border: 0; }
-  .ico:hover { color: var(--text); }
-  .ico.on { color: var(--star); }
-  .acts a { color: var(--muted); padding: 0 3px; font-size: 13px; }
-  .acts a:hover { color: var(--link); text-decoration: none; }
-  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
-  .Online { background: #5cb85c; } .Idle { background: #e0a238; } .Offline { background: #666; }
-  .pill { padding: 1px 6px; border-radius: 9px; font-size: 11px; background: var(--panel2); border: 1px solid var(--line); }
-  .st-Hospital { color: #ff8a80; } .st-Jail { color: #ffcc80; } .st-Traveling, .st-Abroad { color: #8cc4ff; } .st-Federal, .st-Fallen { color: #b0a0ff; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 var(--font); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .muted { color: var(--muted); }
-  .resulthead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
-  .resulthead .btns { margin: 0; }
-  details summary { cursor: pointer; color: var(--accent); font-weight: 600; }
-  details.tos { font-size: 12px; } details.tos li { margin: 3px 0; }
-  details.cols { position: relative; }
-  details.cols summary { list-style: none; border: 1px solid var(--line); border-radius: 4px; padding: 5px 9px; background: var(--panel2); color: var(--text); font-weight: 400; }
-  details.cols summary::-webkit-details-marker { display: none; }
-  details.cols .menu { position: absolute; right: 0; top: 110%; z-index: 5; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; width: 190px; box-shadow: 0 6px 20px #0008; }
-  details.cols .menu label { color: var(--text); font-size: 12px; margin: 3px 0; }
-  .keyinfo { font-size: 11.5px; margin-top: 4px; }
-  .keyinfo.bad { color: var(--warn); } .keyinfo.ok { color: var(--accent); }
-  kbd { font: 10.5px ui-monospace, Consolas, monospace; background: var(--panel2); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
-  #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--accent2); color: #fff; padding: 7px 14px; border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; }
-  #toast.show { opacity: 1; }
+  .mono { font-family: var(--mono); }
+  svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+  /* ---------- form controls ---------- */
+  label.field { display: block; font-size: 14px; font-weight: 500; margin: 0 0 6px; }
+  .field-note { display: block; font-size: 13.5px; color: var(--muted); margin-top: 6px; }
+  input, select, button, textarea { font: inherit; color: var(--text); }
+  input[type=text], input[type=number], input[type=password], select {
+    width: 100%; min-height: 40px; padding: 8px 11px; background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 8px;
+  }
+  input::placeholder { color: var(--muted); opacity: .8; }
+  input:hover, select:hover { border-color: var(--surface-3); }
+  input:focus, select:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent); }
+  select[multiple] { min-height: 200px; padding: 6px; }
+  select[multiple] option { padding: 5px 8px; border-radius: 4px; }
+  .check { display: flex; align-items: center; gap: 10px; font-size: 15px; cursor: pointer; min-height: 32px; }
+  .check input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; flex: 0 0 auto; }
+  .range { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+  .range .to { color: var(--muted); font-size: 14px; }
+  .inline { display: flex; gap: 8px; align-items: center; }
+  .inline > input, .inline > select { flex: 1; min-width: 0; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 40px; padding: 8px 14px; border-radius: 8px; cursor: pointer;
+    background: var(--surface-2); border: 1px solid var(--line); font-weight: 500; font-size: 15px; white-space: nowrap;
+  }
+  .btn:hover { background: var(--surface-3); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+  .btn.ghost { background: transparent; border-color: transparent; }
+  .btn.ghost:hover { background: var(--surface-2); }
+  .btn.small { min-height: 34px; padding: 5px 11px; font-size: 14px; }
+  .btn.big { min-height: 46px; padding: 10px 22px; font-size: 16px; }
+  .icon-btn { width: 36px; height: 36px; display: inline-grid; place-items: center; border-radius: 8px; background: transparent; border: 0; color: var(--muted); cursor: pointer; }
+  .icon-btn:hover { background: var(--surface-3); color: var(--text); }
+  .icon-btn.on { color: var(--accent); }
+  .icon-btn.on svg { fill: currentColor; }
+
+  /* ---------- top bar ---------- */
+  .topbar { display: flex; align-items: center; gap: 16px; padding: 12px 24px; background: var(--surface); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .brand { font-family: var(--display); font-weight: 800; font-size: 28px; letter-spacing: .5px; line-height: 1; margin: 0; }
+  .brand span { color: var(--accent); }
+  .topbar .spacer { flex: 1; }
+  .key-badge { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; }
+  .key-badge .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--bad); }
+  .key-badge.ok .dot { background: var(--good); }
+  .rate { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
+  .rate .meter { width: 90px; height: 8px; background: var(--surface-3); border-radius: 4px; overflow: hidden; }
+  .rate .meter > div { height: 100%; width: 0; background: var(--good); transition: width .3s; }
+  .rate b { color: var(--text); font-family: var(--mono); font-weight: 500; }
+
+  /* ---------- scan bar ---------- */
+  .scanbar { padding: 18px 24px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .scan-grid { display: grid; grid-template-columns: minmax(220px, 1.3fr) minmax(200px, 1.2fr) minmax(120px, .6fr) minmax(120px, .6fr) auto; gap: 14px; align-items: end; }
+  .scan-actions { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
+  .scan-foot { display: flex; align-items: center; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
+  .progress { flex: 1; min-width: 200px; display: flex; align-items: center; gap: 12px; }
+  .bar { flex: 1; height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; }
+  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  #status { font-size: 14.5px; color: var(--muted); min-width: 0; }
+  #status b { color: var(--text); font-weight: 600; }
+  details.log summary { cursor: pointer; font-size: 14px; color: var(--muted); list-style: none; display: inline-flex; gap: 6px; align-items: center; }
+  details.log summary::-webkit-details-marker { display: none; }
+  details.log summary::before { content: "▸"; transition: transform .15s; }
+  details.log[open] summary::before { transform: rotate(90deg); }
+  #log { margin-top: 10px; max-height: 160px; overflow: auto; font: 13px/1.6 var(--mono); color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+  #log .err { color: var(--bad); } #log .warn { color: var(--warn); }
+
+  /* ---------- layout ---------- */
+  .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 24px; padding: 24px; align-items: start; }
+
+  /* ---------- filters ---------- */
+  .filters { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; }
+  .filters-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 6px; }
+  .filters-head h2 { margin: 0; font-size: 19px; font-weight: 600; }
+  .filters-block { padding: 10px 18px 16px; border-bottom: 1px solid var(--line); }
+  .quick { display: flex; flex-wrap: wrap; gap: 8px; }
+  .quick button { min-height: 34px; padding: 5px 12px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); font-size: 14px; cursor: pointer; }
+  .quick button:hover { border-color: var(--accent); color: var(--text); background: var(--accent-soft); }
+  .group { border-bottom: 1px solid var(--line); }
+  .group:last-child { border-bottom: 0; }
+  .group > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 15px 18px; font-weight: 600; font-size: 16px; }
+  .group > summary::-webkit-details-marker { display: none; }
+  .group > summary .chev { margin-left: auto; color: var(--muted); transition: transform .15s; }
+  .group[open] > summary .chev { transform: rotate(180deg); }
+  .group > summary:hover { background: var(--surface-2); }
+  .group .count { font-size: 13px; font-weight: 600; background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 1px 8px; }
+  .group .cost { font-size: 13px; font-weight: 500; color: var(--muted); }
+  .group-body { padding: 2px 18px 18px; display: grid; gap: 16px; }
+  .status-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; }
+
+  /* ---------- results ---------- */
+  .results { min-width: 0; }
+  .res-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+  .segmented { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 4px; gap: 2px; }
+  .segmented button { min-height: 36px; padding: 6px 14px; border: 0; background: transparent; border-radius: 7px; font-size: 15px; font-weight: 500; color: var(--muted); cursor: pointer; }
+  .segmented button[aria-pressed="true"] { background: var(--surface-3); color: var(--text); }
+  .segmented .n { font-family: var(--mono); font-size: 13px; margin-left: 4px; }
+  .counts { font-size: 15px; color: var(--muted); }
+  .counts b { color: var(--text); font-size: 20px; font-weight: 600; font-family: var(--mono); }
+  .summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; min-height: 36px; font-size: 15px; }
+  .summary .lead { color: var(--muted); }
+  .chip-x { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 4px 8px 4px 12px; border-radius: 999px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); font-size: 14.5px; cursor: pointer; color: var(--text); }
+  .chip-x svg { width: 15px; height: 15px; color: var(--muted); }
+  .chip-x:hover svg { color: var(--text); }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+  .toolbar .spacer { flex: 1; }
+  .menu-wrap { position: relative; }
+  .menu-wrap > summary { list-style: none; }
+  .menu-wrap > summary::-webkit-details-marker { display: none; }
+  .menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; width: 230px; box-shadow: var(--shadow); }
+
+  .tablewrap { overflow: auto; max-height: calc(100vh - 150px); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 14.5px; }
+  th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; vertical-align: middle; }
+  th { position: sticky; top: 0; z-index: 2; background: var(--surface-2); font-size: 13.5px; font-weight: 600; color: var(--muted); }
+  th button { all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+  th button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  th.sorted { color: var(--text); }
+  th.num, td.num { text-align: right; }
+  td.num { font-family: var(--mono); font-size: 14px; }
+  tbody tr:hover td { background: color-mix(in srgb, var(--surface-2) 70%, transparent); }
+  tbody tr.watched td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  td.acts { padding: 4px 6px; }
+  .acts-wrap { display: flex; gap: 0; }
+  .player a { font-weight: 600; font-size: 15px; color: var(--text); }
+  .player a:hover { color: var(--link); }
+  .player .id { color: var(--muted); font-family: var(--mono); font-size: 13px; margin-left: 6px; }
+  .online { display: inline-flex; align-items: center; gap: 7px; }
+  .online .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+  .dot.Online { background: var(--good); } .dot.Idle { background: var(--warn); } .dot.Offline { background: var(--muted); opacity: .6; }
+  .est-rank { color: var(--muted); }
+  .tag { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 13px; background: var(--surface-3); }
+  .st-Okay { color: var(--good); } .st-Hospital { color: var(--bad); } .st-Jail { color: var(--warn); } .st-Traveling, .st-Abroad { color: var(--info); } .st-Federal, .st-Fallen { color: var(--muted); }
+  td.note { max-width: 220px; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+  .links { display: flex; gap: 0; }
+  .links a { width: 34px; height: 34px; display: inline-grid; place-items: center; border-radius: 8px; color: var(--muted); }
+  .links a:hover { background: var(--surface-3); color: var(--text); text-decoration: none; }
+  #renderNote { font-size: 14px; color: var(--muted); margin-top: 10px; }
+
+  /* ---------- empty states ---------- */
+  .empty { padding: 56px 32px; text-align: center; }
+  .empty h3 { font-size: 21px; margin: 0 0 8px; font-weight: 600; }
+  .empty p { color: var(--muted); margin: 0 auto 18px; max-width: 520px; font-size: 15.5px; }
+  .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; max-width: 760px; margin: 24px auto 0; text-align: left; }
+  .step { background: var(--surface-2); border-radius: var(--radius); padding: 16px 18px; }
+  .step b { display: block; font-size: 16px; margin-bottom: 4px; }
+  .step span { color: var(--muted); font-size: 14.5px; }
+  .step .n { font-family: var(--display); font-size: 26px; color: var(--accent); line-height: 1; display: block; margin-bottom: 6px; }
+
+  /* ---------- settings dialog ---------- */
+  dialog { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--text); padding: 0; width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 48px); box-shadow: var(--shadow); }
+  dialog::backdrop { background: rgba(5, 8, 12, .6); }
+  .dlg-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--surface); z-index: 1; }
+  .dlg-head h2 { margin: 0; font-size: 21px; font-weight: 600; }
+  .dlg-body { padding: 6px 22px 22px; }
+  .dlg-section { padding: 18px 0; border-bottom: 1px solid var(--line); display: grid; gap: 14px; }
+  .dlg-section:last-child { border-bottom: 0; }
+  .dlg-section h3 { margin: 0; font-size: 17px; font-weight: 600; }
+  .dlg-section p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .keystate { font-size: 14.5px; }
+  .keystate.ok { color: var(--good); } .keystate.bad { color: var(--warn); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tos { margin: 0; padding-left: 20px; color: var(--muted); font-size: 14.5px; display: grid; gap: 6px; }
+  .tos b { color: var(--text); font-weight: 600; }
+  kbd { font: 13px var(--mono); background: var(--surface-3); border-radius: 5px; padding: 1px 6px; }
+
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px); background: var(--text); color: var(--bg); padding: 10px 18px; border-radius: 10px; font-weight: 500; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 50; }
+  #toast.show { opacity: 1; transform: translateX(-50%); }
+
+  .mobile-only { display: none; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 1180px) {
+    .scan-grid { grid-template-columns: 1fr 1fr; }
+    .scan-actions { grid-column: 1 / -1; }
+  }
+  @media (max-width: 900px) {
+    .topbar, .scanbar { padding-left: 16px; padding-right: 16px; }
+    .layout { grid-template-columns: 1fr; padding: 16px; gap: 16px; }
+    .filters { position: static; max-height: none; display: none; }
+    body.filters-open .filters { display: block; }
+    .mobile-only { display: inline-flex; }
+    .steps { grid-template-columns: 1fr; }
+    .rate .meter { width: 60px; }
+  }
+  @media (max-width: 560px) {
+    .scan-grid { grid-template-columns: 1fr; }
+    .two { grid-template-columns: 1fr; }
+    .brand { font-size: 24px; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>Torn <span>Player Search</span></h1>
+
+<!-- icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"/><path d="M14 6l3 3"/></symbol>
+  <symbol id="i-hide" viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M10.6 5.1A9.6 9.6 0 0 1 12 5c6.5 0 9.5 7 9.5 7a15 15 0 0 1-2.3 3.3M6.6 6.6C3.9 8.4 2.5 12 2.5 12s3 7 9.5 7a9 9 0 0 0 4.6-1.3"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></symbol>
+  <symbol id="i-show" viewBox="0 0 24 24"><path d="M2.5 12s3-7 9.5-7 9.5 7 9.5 7-3 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-attack" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6 8.5-6"/></symbol>
+  <symbol id="i-trade" viewBox="0 0 24 24"><path d="M16 3l4 4-4 4M20 7H4M8 21l-4-4 4-4M4 17h16"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 7h14l-1 13H6z"/><path d="M9 10V6a3 3 0 0 1 6 0v4"/></symbol>
+  <symbol id="i-friend" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></symbol>
+  <symbol id="i-details" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
+  <symbol id="i-columns" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16"/></symbol>
+</svg>
+
+<header class="topbar">
+  <h1 class="brand">Torn <span>Player Search</span></h1>
   <div class="spacer"></div>
-  <div id="rate" title="API calls this tool made in the last 60 seconds vs. your budget"><span>API</span><div class="meter"><div id="rateBar"></div></div><span id="rateText">0/80</span></div>
-  <div id="status">Idle</div>
+  <div class="rate" title="API calls this tool made in the last 60 seconds, against your per-minute budget">
+    <span>API use</span><div class="meter" aria-hidden="true"><div id="rateBar"></div></div><b id="rateText">0/80</b>
+  </div>
+  <button class="key-badge" id="keyBadge" type="button"><span class="dot"></span><span id="keyBadgeText">No API key</span></button>
+  <button class="btn" id="openSettings" type="button"><svg class="i"><use href="#i-settings"/></svg>Settings</button>
 </header>
 
-<main>
-<aside>
-  <!-- API key -->
-  <div class="panel">
-    <h2>API key</h2>
-    <div class="row">
-      <input type="password" id="apiKey" placeholder="Public-access key recommended" autocomplete="off">
-      <button id="saveKey" class="fixed">Save</button>
+<!-- ============ scan bar ============ -->
+<section class="scanbar" aria-label="Scan the Hall of Fame">
+  <div class="scan-grid">
+    <div>
+      <label class="field" for="mode">What to scan</label>
+      <select id="mode">
+        <option value="category">A Hall of Fame list, from the top</option>
+        <option value="levelband">Players in my level range</option>
+      </select>
     </div>
-    <label><input type="checkbox" id="rememberKey" checked> Remember in this browser</label>
-    <div id="keyInfo" class="keyinfo"></div>
-    <label>Request budget per minute (hard cap 100 = Torn's limit across all your keys)</label>
-    <input type="number" id="rpm" value="80" min="5" max="100">
-    <div class="hint">80 leaves room for other Torn tools you run (TornTools, TornStats, faction bots…).</div>
-  </div>
-
-  <!-- Scan -->
-  <div class="panel">
-    <h2>1 · Scan Hall of Fame</h2>
-    <label>Mode</label>
-    <select id="mode">
-      <option value="category">Browse a HoF category from a position</option>
-      <option value="levelband">Level band (jumps straight to your level range)</option>
-    </select>
     <div id="catOpts">
-      <label>Category</label>
+      <label class="field" for="cat">Hall of Fame list</label>
       <select id="cat">
-        <option value="networth">Networth</option>
+        <option value="networth">Net worth</option>
         <option value="level">Level</option>
         <option value="rank">Rank</option>
         <option value="awards">Awards</option>
@@ -144,178 +317,319 @@
         <option value="racingpoints">Racing points</option>
         <option value="racingwins">Racing wins</option>
       </select>
-      <label>Start at HoF position</label>
-      <input type="number" id="startPos" value="1" min="1">
     </div>
     <div id="bandOpts" hidden>
-      <div class="hint">Uses the Level HoF and finds your band with a quick binary search (~20–25 calls), then scans down. Level min/max come from the filters below.</div>
+      <label class="field">Level range</label>
+      <div class="field-note" style="margin-top:0" id="bandNote">Set the level range in Filters, or use “Use my level”.</div>
     </div>
-    <label>Pages per scan (100 players per page = 1 call)</label>
-    <input type="number" id="maxPages" value="20" min="1" max="500">
-    <label><input type="checkbox" id="autoLookup"> Automatically run the detailed lookup after each scan</label>
-    <div class="btns">
-      <button class="primary" id="scanBtn" title="Ctrl+Enter">Scan</button>
-      <button id="continueBtn" disabled title="Scan the next pages from where the last scan stopped">Continue ▸</button>
-      <button id="myLevelBtn" title="Uses 1 call to read your own level">Use my level ±</button>
-      <input type="number" id="levelSpread" value="3" min="0" style="width:52px;flex:0 0 auto" title="Level spread">
+    <div id="startWrap">
+      <label class="field" for="startPos">Start at position</label>
+      <input type="number" id="startPos" value="1" min="1" inputmode="numeric">
     </div>
-    <div class="btns">
-      <button class="danger" id="stopBtn" disabled title="Esc">Stop</button>
-      <button id="clearBtn">Clear results</button>
+    <div>
+      <label class="field" for="maxPages">Players to scan</label>
+      <select id="maxPages">
+        <option value="5">500</option>
+        <option value="10">1,000</option>
+        <option value="20" selected>2,000</option>
+        <option value="50">5,000</option>
+        <option value="100">10,000</option>
+        <option value="200">20,000</option>
+      </select>
     </div>
-    <div class="bar"><div id="progress"></div></div>
-    <div id="log"></div>
-  </div>
-
-  <!-- Presets -->
-  <div class="panel">
-    <h2>Presets <button class="small" id="resetFilters" title="Clear every filter">Reset filters</button></h2>
-    <div class="row">
-      <select id="presetSel"><option value="">Saved presets…</option></select>
-      <button class="fixed small" id="presetSave" title="Save current scan settings + filters">Save</button>
-      <button class="fixed small" id="presetDel" title="Delete selected preset">✕</button>
-    </div>
-    <div class="chips" id="quickChips"></div>
-  </div>
-
-  <!-- Free filters -->
-  <div class="panel">
-    <h2>Filters · free <span class="sub">(from HoF data)</span></h2>
-    <label>Show</label>
-    <select id="fView">
-      <option value="all">All scanned players (except hidden)</option>
-      <option value="watch">Watchlist only</option>
-      <option value="hidden">Hidden players only</option>
-    </select>
-    <label>Level</label>
-    <div class="row"><input type="number" id="fLvlMin" placeholder="min"><span class="dash">–</span><input type="number" id="fLvlMax" placeholder="max"></div>
-    <label>Last action (time since)</label>
-    <div class="row">
-      <input type="number" id="fLaMin" placeholder="min" step="any"><span class="dash">–</span>
-      <input type="number" id="fLaMax" placeholder="max" step="any">
-      <select id="fLaUnit" style="flex:0 0 76px"><option value="3600">hours</option><option value="86400" selected>days</option></select>
-    </div>
-    <div class="hint">e.g. max 1 day = played in the last day; min 30 days = inactive for 30+ days.</div>
-    <label>Account age (days)</label>
-    <div class="row"><input type="number" id="fAgeMin" placeholder="min"><span class="dash">–</span><input type="number" id="fAgeMax" placeholder="max"></div>
-    <label>Faction</label>
-    <div class="row">
-      <select id="fFaction"><option value="">Any</option><option value="none">No faction</option><option value="in">In a faction</option><option value="id">Specific ID →</option></select>
-      <input type="number" id="fFactionId" placeholder="faction id">
-    </div>
-    <label>Name contains</label>
-    <input type="text" id="fName">
-    <label>Networth (accepts 500m, 2.5b, …)</label>
-    <div class="row"><input type="text" id="fNwMin" placeholder="min"><span class="dash">–</span><input type="text" id="fNwMax" placeholder="max"></div>
-    <div class="hint">Networth is free when scanning the Networth category; otherwise it is filled in by the lookup step.</div>
-  </div>
-
-  <!-- Enrichment filters -->
-  <div class="panel">
-    <h2>2 · Detailed lookup <span class="sub">(1 call / player)</span></h2>
-    <label>Job / company type <span class="muted">(ctrl/shift-click for several)</span></label>
-    <select id="fJob" multiple></select>
-    <label>Position contains</label>
-    <input type="text" id="fPos" placeholder="e.g. Director">
-    <label>Company stars (min)</label>
-    <input type="number" id="fStars" min="0" max="10">
-    <label>Current status</label>
-    <div class="checks" id="fStatus"></div>
-    <label>Donator</label>
-    <select id="fDonator"><option value="">Any</option><option value="yes">Donator / Subscriber</option><option value="no">Not donator</option></select>
-    <label>Property contains</label>
-    <input type="text" id="fProp" placeholder="e.g. Private Island">
-    <label>Max players to look up per run</label>
-    <input type="number" id="enrichCap" value="200" min="1">
-    <label>Reuse cached lookups younger than (hours)</label>
-    <input type="number" id="cacheHours" value="12" min="0">
-    <div class="btns">
-      <button class="primary" id="enrichBtn">Look up matching players</button>
-      <button id="clearCacheBtn">Clear cache</button>
-    </div>
-    <div class="hint">Looks up only players that pass the free filters and have no fresh cached data. While detailed filters are set, players that haven't been looked up yet are hidden. In <i>Watchlist only</i> view this refreshes your watchlist.</div>
-  </div>
-
-  <!-- Stat estimates -->
-  <div class="panel">
-    <h2>3 · Battle stat estimates</h2>
-    <div class="hint" style="margin-top:0"><b>Rank estimate (free):</b> works out a stat bracket from rank, level, crimes and networth, the same method TornTools uses. It fills in automatically for looked-up players (and for free when scanning the Level HoF with networth known).</div>
-    <label>Estimated total stats (accepts 500k, 2.5m, 1b)</label>
-    <div class="row"><input type="text" id="fBsMin" placeholder="min"><span class="dash">–</span><input type="text" id="fBsMax" placeholder="max"></div>
-    <label>Fair Fight (FFScouter only)</label>
-    <div class="row"><input type="number" id="fFfMin" step="any" placeholder="min"><span class="dash">–</span><input type="number" id="fFfMax" step="any" placeholder="max"></div>
-    <label>FFScouter key <span class="muted">(a Torn API key registered at ffscouter.com)</span></label>
-    <div class="row">
-      <input type="password" id="ffsKey" placeholder="optional" autocomplete="off">
-      <button id="ffsUseTorn" class="fixed small" title="Copy your Torn key into this field">Use Torn key</button>
-    </div>
-    <label><input type="checkbox" id="ffsAuto"> Fetch FFScouter estimates automatically after each scan</label>
-    <div class="btns">
-      <button class="primary" id="ffsBtn">Get FFScouter estimates</button>
-    </div>
-    <div class="hint">Optional and more accurate (built from real attack/spy data, plus Fair Fight vs. you). Sends your key and the IDs of players passing the free filters to ffscouter.com, 205 per request, without using your Torn API budget. First <a href="https://ffscouter.com/" target="_blank" rel="noopener">sign up at FFScouter and read their Data Policy &amp; Terms</a>.</div>
-  </div>
-
-  <!-- Watchlist -->
-  <div class="panel">
-    <h2>Watchlist <span class="sub" id="watchCount">0 players</span></h2>
-    <div class="hint" style="margin-top:0">Click ☆ on any row to watch a player, ✎ to add a note, ⊘ to hide them from results.</div>
-    <div class="btns">
-      <button class="small" id="watchExport">Export</button>
-      <button class="small" id="watchImportBtn">Import</button>
-      <input type="file" id="watchImport" accept=".json,application/json" hidden>
-      <button class="small" id="unhideAll">Un-hide all</button>
+    <div class="scan-actions">
+      <button class="btn primary big" id="scanBtn" type="button" title="Ctrl + Enter"><svg class="i"><use href="#i-search"/></svg>Scan</button>
+      <button class="btn big" id="continueBtn" type="button" disabled title="Scan the next batch from where the last scan stopped">Scan more<svg class="i"><use href="#i-play"/></svg></button>
     </div>
   </div>
-
-  <div class="panel">
-    <details class="tos">
-      <summary>Torn API ToS: how this tool uses your key</summary>
-      <ul>
-        <li><b>Data storage:</b> Only in your own browser (localStorage + IndexedDB): scan results, cached player/faction lookups, watchlist, notes, presets and, if ticked, your key. Nothing is sent anywhere except api.torn.com (and ffscouter.com, only if you use it).</li>
-        <li><b>Data sharing:</b> None. No server, no analytics; the only third party is FFScouter, and only if you opt in.</li>
-        <li><b>Purpose of use:</b> Personal player search over public Hall of Fame / profile data.</li>
-        <li><b>Key storage &amp; sharing:</b> Kept locally only; never shared. Untick "Remember" to keep it in memory for this tab only.</li>
-        <li><b>Key access level:</b> <b>Public</b> is enough. All endpoints used (torn/hof, user/{id} profile, job, personalstats, faction/{id}/basic) are public.</li>
-        <li><b>FFScouter (optional):</b> Only if you enter an FFScouter key and request estimates, that key and the relevant player IDs are sent to ffscouter.com under <a href="https://ffscouter.com/" target="_blank" rel="noopener">their Data Policy &amp; Terms</a>. Nothing else is shared.</li>
-        <li><b>Rate limits:</b> Throttled to your chosen budget (default 80/min, hard cap 100/min = Torn's per-user limit). It stops immediately on invalid-key or ban errors and backs off on "too many requests".</li>
-      </ul>
-    </details>
-    <div class="hint">Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> scan · <kbd>Esc</kbd> stop · <kbd>/</kbd> focus name filter</div>
-  </div>
-</aside>
-
-<section>
-  <div class="resulthead">
-    <div><b id="countShown">0</b> shown <span class="muted">of <span id="countTotal">0</span> scanned · <span id="countEnriched">0</span> looked up</span></div>
-    <div class="btns">
-      <button id="factionBtn" title="Look up names for factions in the shown rows (1 call per faction, cached 7 days)">Resolve faction names</button>
-      <button id="copyIdsBtn" title="Copy shown player IDs to clipboard">Copy IDs</button>
-      <button id="csvBtn">Export CSV</button>
-      <details class="cols"><summary>Columns ▾</summary><div class="menu" id="colMenu"></div></details>
+  <div class="scan-foot">
+    <label class="check"><input type="checkbox" id="autoLookup"> Also look up job &amp; status details after scanning</label>
+    <div class="progress">
+      <div class="bar" aria-hidden="true"><div id="progress"></div></div>
+      <span id="status" role="status">Ready</span>
+      <button class="btn danger small" id="stopBtn" type="button" disabled title="Esc"><svg class="i"><use href="#i-stop"/></svg>Stop</button>
     </div>
+    <details class="log"><summary>Activity log</summary><div id="log"></div></details>
   </div>
-  <div class="tablewrap">
-    <table>
-      <thead><tr id="thead"></tr></thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
-  <div class="hint" id="renderNote"></div>
 </section>
-</main>
-<div id="toast"></div>
+
+<div class="layout">
+  <!-- ============ filters ============ -->
+  <aside class="filters" id="filters" aria-label="Filters">
+    <div class="filters-head">
+      <h2>Filters</h2>
+      <button class="btn ghost small" id="resetFilters" type="button">Clear all</button>
+    </div>
+
+    <div class="filters-block">
+      <div class="quick" id="quickChips" aria-label="Quick filters"></div>
+    </div>
+
+    <div class="filters-block">
+      <label class="field" for="presetSel">Saved searches</label>
+      <div class="inline">
+        <select id="presetSel"><option value="">Choose a saved search…</option></select>
+        <button class="btn small" id="presetSave" type="button">Save</button>
+        <button class="icon-btn" id="presetDel" type="button" aria-label="Delete saved search" title="Delete saved search"><svg class="i"><use href="#i-x"/></svg></button>
+      </div>
+    </div>
+
+    <details class="group" open data-group="activity">
+      <summary>Activity <span class="count" hidden></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+      <div class="group-body">
+        <div>
+          <label class="field" id="laLabel">Last active</label>
+          <div class="range" role="group" aria-labelledby="laLabel">
+            <input type="number" id="fLaMin" step="any" min="0" placeholder="Any" aria-label="At least this long ago">
+            <span class="to">to</span>
+            <input type="number" id="fLaMax" step="any" min="0" placeholder="Any" aria-label="At most this long ago">
+          </div>
+          <div class="inline" style="margin-top:8px">
+            <select id="fLaUnit" aria-label="Time unit"><option value="3600">hours ago</option><option value="86400" selected>days ago</option></select>
+          </div>
+          <span class="field-note">Up to 1 day ago = played today. 30 days to Any = inactive for a month or more.</span>
+        </div>
+      </div>
+    </details>
+
+    <details class="group" open data-group="level">
+      <summary>Level &amp; account <span class="count" hidden></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+      <div class="group-body">
+        <div>
+          <label class="field" id="lvlLabel">Level</label>
+          <div class="range" role="group" aria-labelledby="lvlLabel">
+            <input type="number" id="fLvlMin" min="1" max="100" placeholder="Any" aria-label="Minimum level">
+            <span class="to">to</span>
+            <input type="number" id="fLvlMax" min="1" max="100" placeholder="Any" aria-label="Maximum level">
+          </div>
+          <div class="inline" style="margin-top:8px">
+            <button class="btn small" id="myLevelBtn" type="button">Use my level ±</button>
+            <input type="number" id="levelSpread" value="3" min="0" max="50" aria-label="Levels either side of mine" style="max-width:72px">
+          </div>
+        </div>
+        <div>
+          <label class="field" id="ageLabel">Account age (days)</label>
+          <div class="range" role="group" aria-labelledby="ageLabel">
+            <input type="number" id="fAgeMin" min="0" placeholder="Any" aria-label="Minimum account age in days">
+            <span class="to">to</span>
+            <input type="number" id="fAgeMax" min="0" placeholder="Any" aria-label="Maximum account age in days">
+          </div>
+        </div>
+        <div>
+          <label class="field" for="fName">Name contains</label>
+          <input type="text" id="fName" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+    </details>
+
+    <details class="group" open data-group="wealth">
+      <summary>Wealth &amp; faction <span class="count" hidden></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+      <div class="group-body">
+        <div>
+          <label class="field" id="nwLabel">Net worth</label>
+          <div class="range" role="group" aria-labelledby="nwLabel">
+            <input type="text" id="fNwMin" placeholder="Any" aria-label="Minimum net worth" autocomplete="off">
+            <span class="to">to</span>
+            <input type="text" id="fNwMax" placeholder="Any" aria-label="Maximum net worth" autocomplete="off">
+          </div>
+          <span class="field-note">Type amounts like 500m or 2.5b.</span>
+        </div>
+        <div>
+          <label class="field" for="fFaction">Faction</label>
+          <div class="inline">
+            <select id="fFaction"><option value="">Any</option><option value="none">No faction</option><option value="in">In a faction</option><option value="id">A specific faction…</option></select>
+          </div>
+          <input type="number" id="fFactionId" placeholder="Faction ID" aria-label="Faction ID" style="margin-top:8px" hidden>
+        </div>
+      </div>
+    </details>
+
+    <details class="group" data-group="stats">
+      <summary>Battle stats <span class="count" hidden></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+      <div class="group-body">
+        <div>
+          <label class="field" id="bsLabel">Estimated total stats</label>
+          <div class="range" role="group" aria-labelledby="bsLabel">
+            <input type="text" id="fBsMin" placeholder="Any" aria-label="Minimum estimated stats" autocomplete="off">
+            <span class="to">to</span>
+            <input type="text" id="fBsMax" placeholder="Any" aria-label="Maximum estimated stats" autocomplete="off">
+          </div>
+          <span class="field-note">Type amounts like 250k or 2m. Estimates come from each player's rank (free, after looking up details) or from FFScouter.</span>
+        </div>
+        <div>
+          <label class="field" id="ffLabel">Fair Fight</label>
+          <div class="range" role="group" aria-labelledby="ffLabel">
+            <input type="number" id="fFfMin" step="any" min="1" placeholder="Any" aria-label="Minimum Fair Fight">
+            <span class="to">to</span>
+            <input type="number" id="fFfMax" step="any" min="1" placeholder="Any" aria-label="Maximum Fair Fight">
+          </div>
+          <span class="field-note">Needs FFScouter. Higher means a fairer fight against you.</span>
+        </div>
+      </div>
+    </details>
+
+    <details class="group" data-group="job">
+      <summary>Job &amp; status <span class="cost">needs details</span><span class="count" hidden></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+      <div class="group-body">
+        <div>
+          <label class="field" for="fJob">Job or company type</label>
+          <select id="fJob" multiple></select>
+          <span class="field-note">Hold Ctrl (or ⌘) to pick several.</span>
+        </div>
+        <div>
+          <label class="field" for="fPos">Position contains</label>
+          <input type="text" id="fPos" placeholder="e.g. Director" autocomplete="off">
+        </div>
+        <div>
+          <label class="field" for="fStars">Company stars, at least</label>
+          <select id="fStars"><option value="">Any</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select>
+        </div>
+        <div>
+          <span class="field" id="stLabel">Current status</span>
+          <div class="status-checks" id="fStatus" role="group" aria-labelledby="stLabel"></div>
+        </div>
+        <div>
+          <label class="field" for="fDonator">Donator</label>
+          <select id="fDonator"><option value="">Any</option><option value="yes">Donator or subscriber</option><option value="no">Not a donator</option></select>
+        </div>
+        <div>
+          <label class="field" for="fProp">Property contains</label>
+          <input type="text" id="fProp" placeholder="e.g. Private Island" autocomplete="off">
+        </div>
+      </div>
+    </details>
+  </aside>
+
+  <!-- ============ results ============ -->
+  <main class="results">
+    <div class="res-head">
+      <div class="segmented" role="group" aria-label="Which players to show">
+        <button type="button" data-view="all" aria-pressed="true">All players</button>
+        <button type="button" data-view="watch" aria-pressed="false">Watchlist<span class="n" id="watchCount">0</span></button>
+        <button type="button" data-view="hidden" aria-pressed="false">Hidden<span class="n" id="hiddenCount">0</span></button>
+      </div>
+      <select id="fView" hidden><option value="all">all</option><option value="watch">watch</option><option value="hidden">hidden</option></select>
+      <div class="counts"><b id="countShown">0</b> shown · <span id="countTotal">0</span> scanned · <span id="countEnriched">0</span> with details</div>
+    </div>
+
+    <div class="summary" id="summary" aria-live="polite"></div>
+
+    <div class="toolbar">
+      <button class="btn mobile-only" id="toggleFilters" type="button" aria-controls="filters" aria-expanded="false"><svg class="i"><use href="#i-filter"/></svg>Filters</button>
+      <button class="btn primary" id="enrichBtn" type="button"><svg class="i"><use href="#i-details"/></svg><span id="enrichLabel">Look up details</span></button>
+      <button class="btn" id="ffsBtn" type="button"><svg class="i"><use href="#i-gauge"/></svg><span id="ffsLabel">FFScouter estimates</span></button>
+      <button class="btn" id="factionBtn" type="button"><svg class="i"><use href="#i-flag"/></svg><span id="factionLabel">Faction names</span></button>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="copyIdsBtn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy IDs</button>
+      <button class="btn ghost" id="csvBtn" type="button"><svg class="i"><use href="#i-download"/></svg>Export CSV</button>
+      <details class="menu-wrap" id="colsMenu">
+        <summary class="btn ghost"><svg class="i"><use href="#i-columns"/></svg>Columns</summary>
+        <div class="menu" id="colMenu"></div>
+      </details>
+    </div>
+
+    <div class="tablewrap" id="tablewrap">
+      <table id="table">
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="empty" hidden></div>
+    </div>
+    <div id="renderNote"></div>
+  </main>
+</div>
+
+<!-- ============ settings ============ -->
+<dialog id="settings" aria-labelledby="settingsTitle">
+  <div class="dlg-head">
+    <h2 id="settingsTitle">Settings</h2>
+    <button class="icon-btn" id="closeSettings" type="button" aria-label="Close settings"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="dlg-body">
+    <section class="dlg-section">
+      <h3>Torn API key</h3>
+      <p>A <b>Public</b> key is all this tool needs. Create one under Torn → Preferences → API Keys.</p>
+      <div class="inline">
+        <input type="password" id="apiKey" placeholder="16-character key" autocomplete="off" aria-label="Torn API key" spellcheck="false">
+        <button class="btn primary" id="saveKey" type="button">Save key</button>
+      </div>
+      <div id="keyInfo" class="keystate" role="status"></div>
+      <label class="check"><input type="checkbox" id="rememberKey" checked> Remember my keys in this browser</label>
+    </section>
+
+    <section class="dlg-section">
+      <h3>FFScouter (optional)</h3>
+      <p>Adds more accurate stat estimates and Fair Fight. Your key must be registered at FFScouter first. Using it sends your key and the IDs of matching players to ffscouter.com. <a href="https://ffscouter.com/" target="_blank" rel="noopener">Sign up and read their Data Policy &amp; Terms</a>.</p>
+      <div class="inline">
+        <input type="password" id="ffsKey" placeholder="Registered key" autocomplete="off" aria-label="FFScouter key" spellcheck="false">
+        <button class="btn" id="ffsUseTorn" type="button">Use my Torn key</button>
+      </div>
+      <label class="check"><input type="checkbox" id="ffsAuto"> Get FFScouter estimates automatically after each scan</label>
+    </section>
+
+    <section class="dlg-section">
+      <h3>Speed &amp; caching</h3>
+      <div class="two">
+        <div>
+          <label class="field" for="rpm">API calls per minute</label>
+          <input type="number" id="rpm" value="80" min="5" max="100" inputmode="numeric">
+          <span class="field-note">Torn allows 100 across all your tools. 80 leaves room for others.</span>
+        </div>
+        <div>
+          <label class="field" for="enrichCap">Players per detail lookup</label>
+          <input type="number" id="enrichCap" value="200" min="1" inputmode="numeric">
+          <span class="field-note">One call each. 200 takes about 2½ minutes.</span>
+        </div>
+        <div>
+          <label class="field" for="cacheHours">Reuse details for (hours)</label>
+          <input type="number" id="cacheHours" value="12" min="0" inputmode="numeric">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn small" id="clearCacheBtn" type="button">Forget looked-up details</button>
+        <button class="btn small danger" id="clearBtn" type="button">Clear scanned players</button>
+      </div>
+    </section>
+
+    <section class="dlg-section">
+      <h3>Watchlist</h3>
+      <p>Back up your watched players, notes and hidden players, or move them to another browser.</p>
+      <div class="btn-row">
+        <button class="btn small" id="watchExport" type="button"><svg class="i"><use href="#i-download"/></svg>Export</button>
+        <button class="btn small" id="watchImportBtn" type="button">Import</button>
+        <input type="file" id="watchImport" accept=".json,application/json" hidden>
+        <button class="btn small" id="unhideAll" type="button">Un-hide everyone</button>
+      </div>
+    </section>
+
+    <section class="dlg-section">
+      <h3>How your data is used</h3>
+      <ul class="tos">
+        <li><b>Storage:</b> everything stays in this browser (scan results, looked-up details, watchlist, notes, saved searches and, if you allow it, your keys).</li>
+        <li><b>Sharing:</b> no server and no analytics. The page talks to api.torn.com, and to ffscouter.com only if you use FFScouter.</li>
+        <li><b>Purpose:</b> personal player search over public Hall of Fame and profile data.</li>
+        <li><b>Key access:</b> Public. Every Torn endpoint used is public.</li>
+        <li><b>Rate limit:</b> never more than your per-minute budget in any 60 seconds (hard cap 100). It pauses when Torn says “too many requests” and forgets a key that Torn rejects.</li>
+      </ul>
+      <p>Shortcuts: <kbd>Ctrl</kbd> + <kbd>Enter</kbd> scan · <kbd>Esc</kbd> stop · <kbd>/</kbd> search names</p>
+    </section>
+  </div>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 'use strict';
 const API = 'https://api.torn.com/v2';
 const COMMENT = 'PlayerSearch';
 const $ = id => document.getElementById(id);
+const icon = (name, label) => `<svg class="i"${label ? '' : ' aria-hidden="true"'}><use href="#i-${name}"/></svg>`;
 
 // ---------- static data ----------
 const COMPANY_TYPES = {1:'Hair Salon',2:'Law Firm',3:'Flower Shop',4:'Car Dealership',5:'Clothing Store',6:'Gun Shop',7:'Game Shop',8:'Candle Shop',9:'Toy Shop',10:'Adult Novelties',11:'Cyber Cafe',12:'Grocery Store',13:'Theater',14:'Sweet Shop',15:'Cruise Line',16:'Television Network',18:'Zoo',19:'Firework Stand',20:'Property Broker',21:'Furniture Store',22:'Gas Station',23:'Music Store',24:'Nightclub',25:'Pub',26:'Gents Strip Club',27:'Restaurant',28:'Oil Rig',29:'Fitness Center',30:'Mechanic Shop',31:'Amusement Park',32:'Lingerie Store',33:'Meat Warehouse',34:'Farm',35:'Software Corporation',36:'Ladies Strip Club',37:'Private Security Firm',38:'Mining Corporation',39:'Detective Agency',40:'Logistics Management'};
 const CITY_JOBS = ['Army','Casino','Education','Grocer','Law','Medical'];
 const STATUSES = ['Okay','Hospital','Jail','Traveling','Abroad','Federal','Fallen'];
+const CAT_LABELS = { networth: 'Net worth', level: 'Level', rank: 'Rank', awards: 'Awards', workstats: 'Working stats', attacks: 'Attacks', defends: 'Defends', offences: 'Offences', revives: 'Revives', busts: 'Busts', traveltime: 'Travel time', racingskill: 'Racing skill', racingpoints: 'Racing points', racingwins: 'Racing wins' };
 const DEFAULT_RPM = 80;
 const FFS_API = 'https://ffscouter.com/api/v1';
 const FFS_BATCH = 205;          // FFScouter get-stats max targets per request
@@ -330,11 +644,11 @@ const RANK_TRIGGERS = {
 };
 const STAT_BRACKETS = [
   { label: 'under 2k', min: 0, max: 2e3 },
-  { label: '2k – 25k', min: 2e3, max: 2.5e4 },
-  { label: '20k – 250k', min: 2e4, max: 2.5e5 },
-  { label: '200k – 2.5m', min: 2e5, max: 2.5e6 },
-  { label: '2m – 25m', min: 2e6, max: 2.5e7 },
-  { label: '20m – 250m', min: 2e7, max: 2.5e8 },
+  { label: '2k–25k', min: 2e3, max: 2.5e4 },
+  { label: '20k–250k', min: 2e4, max: 2.5e5 },
+  { label: '200k–2.5m', min: 2e5, max: 2.5e6 },
+  { label: '2m–25m', min: 2e6, max: 2.5e7 },
+  { label: '20m–250m', min: 2e7, max: 2.5e8 },
   { label: 'over 200m', min: 2e8, max: Infinity },
 ];
 
@@ -372,6 +686,7 @@ const idb = {
 
 // ---------- state ----------
 let apiKey = store.get('tps_key', '') || '';
+let keyType = store.get('tps_key_type', '') || '';
 let running = false, stopFlag = false;
 const rows = new Map();                        // id -> row
 let profileCache = {};                         // id -> {t, d}   (IndexedDB)
@@ -381,10 +696,10 @@ let watch = store.get('tps_watch', {});        // id -> {name, note, t}
 let hidden = store.get('tps_hidden', {});      // id -> name
 let factions = store.get('tps_factions', {});  // id -> {name, tag, t}
 let presets = store.get('tps_presets', {});    // name -> form
-let hiddenCols = new Set(store.get('tps_cols', ['hofpos', 'property']));
+let hiddenCols = new Set(store.get('tps_cols2', ['hofpos', 'property', 'donator']));
 let sortKey = 'networth', sortDir = -1;
 let lastCat = 'networth';
-let cursor = null;                             // where "Continue" resumes: {cat, offset, lvlMin}
+let cursor = null;                             // where "Scan more" resumes: {cat, offset, lvlMin}
 
 class StopError extends Error {}
 class FatalApiError extends Error {}
@@ -395,12 +710,13 @@ function log(msg, cls) {
   if (cls) d.className = cls;
   d.textContent = new Date().toLocaleTimeString() + '  ' + msg;
   $('log').prepend(d);
-  while ($('log').childNodes.length > 60) $('log').lastChild.remove();
+  while ($('log').childNodes.length > 80) $('log').lastChild.remove();
+  if (cls === 'err') { setStatus(esc(msg)); toast(msg); }
 }
 function setStatus(html) { $('status').innerHTML = html; }
 function setProgress(frac) { $('progress').style.width = Math.max(0, Math.min(1, frac)) * 100 + '%'; }
 let toastTimer;
-function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1800); }
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600); }
 
 // ---------- rate limiter (sliding 60s window: never more than `budget` calls in ANY 60s span) ----------
 const budget = () => Math.max(5, Math.min(100, Math.floor(+$('rpm').value) || DEFAULT_RPM));
@@ -414,7 +730,7 @@ const limiter = {
       const now = Date.now();
       if (now >= this.pauseUntil && this.used() < budget()) { this.stamps.push(now); return; }
       const wait = now < this.pauseUntil ? this.pauseUntil - now : 60000 - (now - this.stamps[0]) + 25;
-      setStatus(`Rate budget reached, waiting <b>${Math.ceil(wait / 1000)}s</b>…`);
+      setStatus(`Waiting <b>${Math.ceil(wait / 1000)}s</b> to stay under your API budget…`);
       await sleep(Math.min(wait, 500));
     }
   }
@@ -424,12 +740,12 @@ setInterval(() => {
   const u = limiter.used(), b = budget();
   $('rateText').textContent = `${u}/${b}`;
   $('rateBar').style.width = Math.min(100, u / b * 100) + '%';
-  $('rateBar').style.background = u >= b ? 'var(--warn)' : 'var(--accent)';
+  $('rateBar').style.background = u >= b ? 'var(--warn)' : 'var(--good)';
 }, 1000);
 
 // ---------- API ----------
 async function api(path, params = {}) {
-  if (!apiKey) throw new FatalApiError('No API key set.');
+  if (!apiKey) throw new FatalApiError('Add your Torn API key in Settings first.');
   for (let attempt = 0; attempt < 4; attempt++) {
     await limiter.take();
     const q = new URLSearchParams({ ...params, key: apiKey, comment: COMMENT });
@@ -446,50 +762,61 @@ async function api(path, params = {}) {
     const { code, error } = data.error;
     if ([2, 10, 13, 18].includes(code)) {        // bad/paused/disabled key: stop to avoid IP ban for repeated invalid-key calls
       forgetKey();
-      throw new FatalApiError(`Key problem (code ${code}: ${error}). Key cleared; please enter a valid key.`);
+      throw new FatalApiError(`Torn rejected your API key (${error}). It has been removed; add a working key in Settings.`);
     }
-    if ([8, 9, 14].includes(code)) throw new FatalApiError(`API unavailable (code ${code}: ${error}).`);
-    if (code === 16) throw new FatalApiError(`Key access level too low (code 16: ${error}).`);
+    if ([8, 9, 14].includes(code)) throw new FatalApiError(`Torn's API is unavailable right now (${error}).`);
+    if (code === 16) throw new FatalApiError(`Your key's access level is too low (${error}).`);
     if (code === 5) {                            // too many requests: back off a full minute
       limiter.pauseUntil = Date.now() + 61000;
-      log('Torn says too many requests (code 5). Pausing 60s. Other tools may be using your limit.', 'warn');
+      log('Torn says too many requests. Pausing 60s; other tools may be using your limit.', 'warn');
       continue;
     }
     if (code === 17 || code === 0) { await sleep(3000); continue; } // backend/unknown: brief retry
     return data; // other errors (e.g. 6 incorrect ID): caller handles
   }
-  throw new Error(`Giving up on ${path} after retries.`);
+  throw new Error(`Torn's API kept failing on ${path}. Try again in a minute.`);
 }
 
 function forgetKey() {
-  apiKey = '';
-  store.del('tps_key');
+  apiKey = ''; keyType = '';
+  store.del('tps_key'); store.del('tps_key_type');
   $('apiKey').value = '';
   $('keyInfo').textContent = '';
+  updateKeyBadge();
+}
+
+function updateKeyBadge() {
+  const b = $('keyBadge');
+  b.classList.toggle('ok', !!apiKey);
+  $('keyBadgeText').textContent = apiKey ? `API key connected${keyType ? ' · ' + keyType : ''}` : 'Add API key';
 }
 
 // ---------- key handling ----------
 async function saveKey() {
   const k = $('apiKey').value.trim();
-  if (!/^[A-Za-z0-9]{16}$/.test(k)) { $('keyInfo').className = 'keyinfo bad'; $('keyInfo').textContent = 'Keys are 16 letters/numbers.'; return; }
+  const el = $('keyInfo');
+  if (!/^[A-Za-z0-9]{16}$/.test(k)) { el.className = 'keystate bad'; el.textContent = 'That doesn’t look like a key. Torn keys are 16 letters and numbers.'; return; }
   apiKey = k;
   if ($('rememberKey').checked) store.set('tps_key', k); else store.del('tps_key');
+  el.className = 'keystate'; el.textContent = 'Checking key…';
   try {
     const d = await api('/key/info');
     if (d.error) throw new Error(d.error.error);
-    const lvl = d.info.access.type;
-    const el = $('keyInfo');
-    if (/full|limited/i.test(lvl)) {
-      el.className = 'keyinfo bad';
-      el.textContent = `Key OK (${lvl}). This tool only needs a Public key. Consider making a separate Public key for it.`;
+    keyType = d.info.access.type;
+    if ($('rememberKey').checked) store.set('tps_key_type', keyType);
+    if (/full|limited/i.test(keyType)) {
+      el.className = 'keystate bad';
+      el.textContent = `Connected (${keyType}). This tool only needs a Public key, so consider making a separate Public one for it.`;
     } else {
-      el.className = 'keyinfo ok';
-      el.textContent = `Key OK (${lvl}).`;
+      el.className = 'keystate ok';
+      el.textContent = `Connected (${keyType}). You're ready to scan.`;
     }
   } catch (e) {
-    $('keyInfo').className = 'keyinfo bad';
-    $('keyInfo').textContent = e.message;
+    el.className = 'keystate bad';
+    el.textContent = e.message;
   }
+  updateKeyBadge();
+  render();
 }
 
 // ---------- parsing / formatting ----------
@@ -501,19 +828,21 @@ function parseMoney(s) {
   return +m[1] * ({ '': 1, k: 1e3, m: 1e6, b: 1e9, t: 1e12 })[m[2]];
 }
 const numOrNull = id => { const v = $(id).value.trim(); return v === '' ? null : +v; };
-function fmtMoney(n) {
+function fmtCompact(n) {
   if (n == null) return '';
   const a = Math.abs(n);
-  if (a >= 1e12) return '$' + (n / 1e12).toFixed(2) + 't';
-  if (a >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'b';
-  if (a >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'm';
-  if (a >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'k';
-  return '$' + n;
+  if (a >= 1e12) return +(n / 1e12).toFixed(2) + 't';
+  if (a >= 1e9) return +(n / 1e9).toFixed(2) + 'b';
+  if (a >= 1e6) return +(n / 1e6).toFixed(1) + 'm';
+  if (a >= 1e4) return Math.round(n / 1e3) + 'k';
+  return Number(n).toLocaleString();
 }
+const fmtMoney = n => n == null ? '' : '$' + fmtCompact(n);
+const fmtStat = fmtCompact;
 function fmtAgo(ts) {
   if (!ts) return '';
   const s = Date.now() / 1000 - ts;
-  if (s < 60) return 'now';
+  if (s < 60) return 'just now';
   if (s < 3600) return Math.floor(s / 60) + 'm ago';
   if (s < 86400) return Math.floor(s / 3600) + 'h ago';
   if (s < 86400 * 365) return Math.floor(s / 86400) + 'd ago';
@@ -522,6 +851,7 @@ function fmtAgo(ts) {
 const fmtDate = ts => ts ? new Date(ts * 1000).toLocaleString() : '';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function decodeEntities(s) { const t = document.createElement('textarea'); t.innerHTML = s; return t.value; }
+const plural = (n, w) => `${n.toLocaleString()} ${w}${n === 1 ? '' : 's'}`;
 
 // ---------- data model ----------
 function upsertHof(h, cat) {
@@ -570,8 +900,8 @@ function applyEnriched(r, d) {
     r.stars = j.rating;
   } else {
     r.jobKey = 'j' + j.name;
-    r.jobLabel = j.name + ' (city job)';
-    r.company = '';
+    r.jobLabel = j.name;
+    r.company = 'City job';
     r.position = j.position;
     r.stars = null;
   }
@@ -607,19 +937,13 @@ function statRange(r) {
   const b = STAT_BRACKETS[i];
   return { min: b.min, max: b.max, sort: b.min + 1, src: 'rank', label: b.label };
 }
-function fmtStat(n) {
-  if (n >= 1e12) return (n / 1e12).toFixed(2) + 't';
-  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'b';
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'm';
-  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'k';
-  return String(n);
-}
 
 function cacheFresh(id) {
   const c = profileCache[id];
   const hrs = +$('cacheHours').value || 0;
   return c && (Date.now() - c.t) < hrs * 3600e3;
 }
+const ffsFresh = id => ffCache[id] && Date.now() - ffCache[id].t < 12 * 3600e3;
 
 async function saveCache() {
   const ids = Object.keys(profileCache);
@@ -628,13 +952,12 @@ async function saveCache() {
   }
   if (!(await idb.set('cache', profileCache)) && !saveCache.warned) {
     saveCache.warned = true;
-    log('Could not save lookup cache (browser storage blocked). Lookups will only be cached for this tab.', 'warn');
+    log('Your browser is blocking storage, so looked-up details will only last until you close this tab.', 'warn');
   }
 }
 
 async function saveRows() {
-  const list = [...rows.values()];
-  await idb.set('rows', list.slice(-15000));
+  await idb.set('rows', [...rows.values()].slice(-15000));
   await idb.set('meta', { lastCat, cursor });
 }
 
@@ -646,8 +969,14 @@ function ensureWatchRows() {
   }
 }
 
-function saveWatch() { store.set('tps_watch', watch); const n = Object.keys(watch).length; $('watchCount').textContent = `${n} player${n === 1 ? '' : 's'}`; }
-function saveHidden() { store.set('tps_hidden', hidden); }
+function saveWatch() {
+  store.set('tps_watch', watch);
+  $('watchCount').textContent = Object.keys(watch).length;
+}
+function saveHidden() {
+  store.set('tps_hidden', hidden);
+  $('hiddenCount').textContent = Object.keys(hidden).length;
+}
 
 // ---------- filters ----------
 function viewFilter() {
@@ -734,53 +1063,85 @@ function detailFilter() {
   return fn;
 }
 
+// Players the "Look up details" button would fetch right now.
+function lookupCandidates() {
+  const b = baseFilter(), d = detailFilter();
+  const lookAll = !d.active || $('fView').value === 'watch';
+  const out = [];
+  for (const r of rows.values()) if (b(r) && (lookAll ? !cacheFresh(r.id) : d.needsLookup(r))) out.push(r);
+  return out;
+}
+function ffsCandidates() {
+  const b = baseFilter();
+  const out = [];
+  for (const r of rows.values()) if (b(r) && !ffsFresh(r.id)) out.push(r.id);
+  return out;
+}
+function factionCandidates() {
+  const fresh = id => factions[id] && Date.now() - factions[id].t < 7 * 864e5;
+  return [...new Set(visibleRows().map(r => r.faction_id).filter(id => id && !fresh(id)))];
+}
+
 // ---------- table ----------
 const profileUrl = id => `https://www.torn.com/profiles.php?XID=${id}`;
+const iconBtn = (act, name, label, on) => `<button type="button" class="icon-btn${on ? ' on' : ''}" data-act="${act}" aria-label="${esc(label)}" title="${esc(label)}">${icon(name)}</button>`;
+const iconLink = (href, name, label) => `<a href="${href}" target="_blank" rel="noopener" aria-label="${esc(label)}" title="${esc(label)}">${icon(name)}</a>`;
 const COLS = [
-  { key: 'act', label: '', nosort: true, fixed: true, render: r =>
-      `<button class="ico ${watch[r.id] ? 'on' : ''}" data-act="watch" title="${watch[r.id] ? 'Remove from' : 'Add to'} watchlist">${watch[r.id] ? '★' : '☆'}</button>` +
-      `<button class="ico" data-act="note" title="Add / edit note">✎</button>` +
-      `<button class="ico" data-act="hide" title="${hidden[r.id] ? 'Un-hide' : 'Hide from results'}">${hidden[r.id] ? '↺' : '⊘'}</button>` },
-  { key: 'name', label: 'Player', fixed: true, render: r => `<a href="${profileUrl(r.id)}" target="_blank" rel="noopener">${esc(r.name)}</a> <span class="muted">[${r.id}]</span>` },
-  { key: 'level', label: 'Lvl', num: true },
+  { key: 'act', label: 'Actions', srOnly: true, nosort: true, fixed: true, cls: 'acts', render: r =>
+      `<div class="acts-wrap">` +
+      iconBtn('watch', 'star', watch[r.id] ? `Remove ${r.name} from watchlist` : `Watch ${r.name}`, !!watch[r.id]) +
+      iconBtn('note', 'note', `Note on ${r.name}`) +
+      iconBtn('hide', hidden[r.id] ? 'show' : 'hide', hidden[r.id] ? `Show ${r.name} again` : `Hide ${r.name}`) +
+      `</div>` },
+  { key: 'name', label: 'Player', fixed: true, cls: 'player', render: r => `<a href="${profileUrl(r.id)}" target="_blank" rel="noopener">${esc(r.name)}</a><span class="id">${r.id}</span>` },
+  { key: 'level', label: 'Level', num: true },
   { key: 'bs', label: 'Est. stats', num: true, get: r => statRange(r)?.sort ?? null, render: r => {
       const s = statRange(r);
-      if (!s) return '';
-      if (s.src === 'ffs') return `<span title="FFScouter estimate (${esc(r.ffs.src || 'estimate')})${r.ffs.upd ? ', updated ' + esc(fmtDate(r.ffs.upd)) : ''}">${esc(r.ffs.human || fmtStat(r.ffs.bs))}</span>`;
-      return `<span class="muted" title="Rank-based bracket (TornTools method). Rough; can be off for a week after a networth change.">~${esc(s.label)}</span>`;
+      if (!s) return '<span class="muted">–</span>';
+      if (s.src === 'ffs') return `<span title="FFScouter estimate${r.ffs.upd ? ', updated ' + esc(fmtDate(r.ffs.upd)) : ''}">${esc(r.ffs.human || fmtStat(r.ffs.bs))}</span>`;
+      return `<span class="est-rank" title="Rough range worked out from rank. Can be off for a week after a net worth change.">~${esc(s.label)}</span>`;
     } },
-  { key: 'ff', label: 'FF', num: true, get: r => r.ffs?.ff ?? null, render: r => r.ffs?.ff != null ? `<span title="FFScouter Fair Fight vs. you">${r.ffs.ff.toFixed(2)}</span>` : '' },
-  { key: 'networth', label: 'Networth', num: true, render: r => r.networth == null ? '<span class="muted">?</span>' : fmtMoney(r.networth) },
-  { key: 'hofval', label: 'HoF value', num: true, get: r => r.hof[lastCat] ? r.hof[lastCat].value : null, render: r => r.hof[lastCat] ? Number(r.hof[lastCat].value).toLocaleString() : '' },
-  { key: 'hofpos', label: 'HoF #', num: true, get: r => r.hof[lastCat] ? r.hof[lastCat].pos : null, render: r => r.hof[lastCat] ? r.hof[lastCat].pos.toLocaleString() : '' },
-  { key: 'last_action', label: 'Last action', get: r => r.last_action ? -r.last_action : null, render: r => `<span title="${esc(fmtDate(r.last_action))}">${r.online ? `<span class="dot ${r.online}"></span>` : ''}${fmtAgo(r.last_action)}</span>` },
-  { key: 'age', label: 'Age (d)', num: true, render: r => r.age == null ? '' : `<span title="Signed up ${esc(fmtDate(r.signed_up))}">${r.age.toLocaleString()}</span>` },
+  { key: 'ff', label: 'Fair Fight', num: true, get: r => r.ffs?.ff ?? null, render: r => r.ffs?.ff != null ? r.ffs.ff.toFixed(2) : '' },
+  { key: 'last_action', label: 'Last active', get: r => r.last_action ? -r.last_action : null, render: r => r.last_action ? `<span class="online" title="${esc(fmtDate(r.last_action))}">${r.online ? `<span class="dot ${r.online}" aria-hidden="true"></span>` : ''}${fmtAgo(r.last_action)}${r.online === 'Online' ? '<span class="sr-only"> (online)</span>' : ''}</span>` : '' },
+  { key: 'networth', label: 'Net worth', num: true, render: r => r.networth == null ? '<span class="muted">–</span>' : fmtMoney(r.networth) },
+  { key: 'hofval', label: 'HoF value', num: true, get: r => r.hof[lastCat] ? r.hof[lastCat].value : null, render: r => r.hof[lastCat] ? fmtCompact(r.hof[lastCat].value) : '' },
+  { key: 'hofpos', label: 'HoF rank', num: true, get: r => r.hof[lastCat] ? r.hof[lastCat].pos : null, render: r => r.hof[lastCat] ? '#' + r.hof[lastCat].pos.toLocaleString() : '' },
+  { key: 'age', label: 'Account age', num: true, render: r => r.age == null ? '' : `<span title="Signed up ${esc(fmtDate(r.signed_up))}">${r.age.toLocaleString()}d</span>` },
   { key: 'jobLabel', label: 'Job', render: r => r.enriched ? esc(r.jobLabel) : '<span class="muted">–</span>' },
   { key: 'position', label: 'Position', render: r => esc(r.position || '') },
-  { key: 'stars', label: '★', num: true, render: r => r.stars == null ? '' : r.stars },
-  { key: 'company', label: 'Company', render: r => r.companyId ? `<a href="https://www.torn.com/joblist.php#/p=corpinfo&ID=${r.companyId}" target="_blank" rel="noopener">${esc(r.company)}</a>` : '' },
+  { key: 'stars', label: 'Stars', num: true, render: r => r.stars == null ? '' : `${r.stars}★` },
+  { key: 'company', label: 'Company', render: r => r.companyId ? `<a href="https://www.torn.com/joblist.php#/p=corpinfo&ID=${r.companyId}" target="_blank" rel="noopener">${esc(r.company)}</a>` : esc(r.company || '') },
   { key: 'faction', label: 'Faction', get: r => r.faction_id ? (factions[r.faction_id] ? factions[r.faction_id].name : 'zz' + r.faction_id) : null, render: r => {
-      if (!r.faction_id) return '<span class="muted">none</span>';
+      if (!r.faction_id) return '<span class="muted">None</span>';
       const f = factions[r.faction_id];
-      return `<a href="https://www.torn.com/factions.php?step=profile&ID=${r.faction_id}" target="_blank" rel="noopener">${f ? esc(f.tag ? `[${f.tag}] ${f.name}` : f.name) : r.faction_id}</a>`;
+      return `<a href="https://www.torn.com/factions.php?step=profile&ID=${r.faction_id}" target="_blank" rel="noopener">${f ? esc(f.tag ? `[${f.tag}] ${f.name}` : f.name) : '#' + r.faction_id}</a>`;
     } },
   { key: 'status', label: 'Status', render: r => r.status ? `<span class="st-${esc(r.status)}" title="${esc(r.statusDesc)}">${esc(r.status)}</span>` : '' },
-  { key: 'donator', label: 'Donator', render: r => r.donator ? `<span class="pill">${esc(r.donator)}</span>` : '' },
+  { key: 'donator', label: 'Donator', render: r => r.donator ? `<span class="tag">${esc(r.donator)}</span>` : '' },
   { key: 'property', label: 'Property', render: r => esc(r.property || '') },
-  { key: 'note', label: 'Note', get: r => watch[r.id]?.note || null, render: r => { const n = watch[r.id]?.note; return n ? `<span title="${esc(n)}">${esc(n)}</span>` : ''; }, cls: 'note' },
-  { key: 'links', label: 'Quick links', nosort: true, render: r => `<span class="acts">` +
-      `<a href="https://www.torn.com/loader.php?sid=attack&user2ID=${r.id}" target="_blank" rel="noopener" title="Attack">⚔</a>` +
-      `<a href="https://www.torn.com/messages.php#/p=compose&XID=${r.id}" target="_blank" rel="noopener" title="Send message">✉</a>` +
-      `<a href="https://www.torn.com/trade.php#step=start&userID=${r.id}" target="_blank" rel="noopener" title="Start trade">⇄</a>` +
-      `<a href="https://www.torn.com/bazaar.php?userId=${r.id}" target="_blank" rel="noopener" title="Bazaar">🛒</a>` +
-      `<a href="https://www.torn.com/friendlist.php#/p=add&XID=${r.id}" target="_blank" rel="noopener" title="Add friend">＋</a></span>` },
+  { key: 'note', label: 'Note', cls: 'note', get: r => watch[r.id]?.note || null, render: r => { const n = watch[r.id]?.note; return n ? `<span title="${esc(n)}">${esc(n)}</span>` : ''; } },
+  { key: 'links', label: 'Open in Torn', nosort: true, render: r => `<div class="links">` +
+      iconLink(`https://www.torn.com/loader.php?sid=attack&user2ID=${r.id}`, 'attack', `Attack ${r.name}`) +
+      iconLink(`https://www.torn.com/messages.php#/p=compose&XID=${r.id}`, 'mail', `Message ${r.name}`) +
+      iconLink(`https://www.torn.com/trade.php#step=start&userID=${r.id}`, 'trade', `Trade with ${r.name}`) +
+      iconLink(`https://www.torn.com/bazaar.php?userId=${r.id}`, 'bag', `${r.name}'s bazaar`) +
+      iconLink(`https://www.torn.com/friendlist.php#/p=add&XID=${r.id}`, 'friend', `Add ${r.name} as friend`) + `</div>` },
 ];
 
 const colValue = (c, r) => c.get ? c.get(r) : r[c.key];
-const shownCols = () => COLS.filter(c => c.fixed || !hiddenCols.has(c.key));
+// "HoF value" duplicates Net worth / Level when those lists were scanned, so hide it then.
+const hofValRedundant = () => lastCat === 'networth' || lastCat === 'level';
+const shownCols = () => COLS.filter(c => (c.fixed || !hiddenCols.has(c.key)) && !(c.key === 'hofval' && hofValRedundant()));
+const colLabel = c => c.key === 'hofval' ? (CAT_LABELS[lastCat] || 'HoF value') : c.label;
 
 function renderHead() {
-  $('thead').innerHTML = shownCols().map(c => `<th data-k="${c.key}" class="${c.nosort ? 'nosort' : ''} ${c.key === sortKey ? 'sorted' : ''}">${c.key === 'hofval' ? esc(lastCat) : c.label}${c.key === sortKey ? (sortDir < 0 ? ' ▾' : ' ▴') : ''}</th>`).join('');
+  $('thead').innerHTML = shownCols().map(c => {
+    const label = c.srOnly ? `<span class="sr-only">${c.label}</span>` : esc(colLabel(c));
+    const cls = [c.num ? 'num' : '', c.key === sortKey ? 'sorted' : ''].join(' ');
+    if (c.nosort) return `<th class="${cls}" scope="col">${label}</th>`;
+    const aria = c.key === sortKey ? (sortDir < 0 ? 'descending' : 'ascending') : 'none';
+    return `<th class="${cls}" scope="col" aria-sort="${aria}"><button type="button" data-k="${c.key}">${label}${c.key === sortKey ? (sortDir < 0 ? ' ↓' : ' ↑') : ''}</button></th>`;
+  }).join('');
 }
 
 function visibleRows() {
@@ -791,7 +1152,7 @@ function visibleRows() {
 let renderQueued = false;
 function scheduleRender() { if (!renderQueued) { renderQueued = true; requestAnimationFrame(() => { renderQueued = false; render(); }); } }
 
-const RENDER_LIMIT = 2000;
+const RENDER_LIMIT = 1500;
 function render() {
   const vis = visibleRows();
   const col = COLS.find(c => c.key === sortKey) || COLS[1];
@@ -812,17 +1173,148 @@ function render() {
   $('countShown').textContent = vis.length.toLocaleString();
   $('countTotal').textContent = scanned.toLocaleString();
   $('countEnriched').textContent = enriched.toLocaleString();
-  $('renderNote').textContent = vis.length > RENDER_LIMIT ? `Showing first ${RENDER_LIMIT} rows. Narrow the filters or export CSV for everything.` : '';
+  $('renderNote').textContent = vis.length > RENDER_LIMIT ? `Showing the first ${RENDER_LIMIT.toLocaleString()} of ${vis.length.toLocaleString()}. Add filters to narrow it down, or export everything as CSV.` : '';
   $('continueBtn').disabled = running || !cursor;
+  renderEmpty(vis.length, scanned);
+  renderSummary();
+  updateActionButtons();
+  updateGroupCounts();
 }
 setInterval(() => { if (!running) scheduleRender(); }, 60000);   // keep "x ago" fresh
 
+function renderEmpty(shown, scanned) {
+  const e = $('empty');
+  $('table').hidden = shown === 0;
+  e.hidden = shown !== 0;
+  if (shown) return;
+  const view = $('fView').value;
+  if (!apiKey) {
+    e.innerHTML = `<h3>Find players across Torn's Hall of Fame</h3>
+      <p>Search by level, activity, net worth, job, account age and estimated battle stats.</p>
+      <button class="btn primary big" type="button" data-open-settings>Add your API key</button>
+      <div class="steps">
+        <div class="step"><span class="n">1</span><b>Add a Public key</b><span>Only public data is used. Your key stays in this browser.</span></div>
+        <div class="step"><span class="n">2</span><b>Scan a list</b><span>Pick a Hall of Fame list or your level range, then press Scan.</span></div>
+        <div class="step"><span class="n">3</span><b>Filter &amp; look up</b><span>Narrow results instantly, then look up jobs and status for the ones left.</span></div>
+      </div>`;
+  } else if (view === 'watch') {
+    e.innerHTML = `<h3>Your watchlist is empty</h3><p>Press the star on any player to keep track of them here. Watched players stay saved between visits.</p>`;
+  } else if (view === 'hidden') {
+    e.innerHTML = `<h3>No hidden players</h3><p>Hide players you never want to see in results using the eye button on their row.</p>`;
+  } else if (!scanned) {
+    e.innerHTML = `<h3>No players scanned yet</h3><p>Choose what to scan above and press <b>Scan</b>. Each 100 players costs one API call.</p>
+      <button class="btn primary big" type="button" data-scan>${icon('search')}Scan now</button>`;
+  } else {
+    e.innerHTML = `<h3>No players match these filters</h3><p>${plural(scanned, 'player')} scanned, but none fit. Remove a filter above, or look up details if you're filtering by job or status.</p>
+      <button class="btn big" type="button" data-reset>Clear all filters</button>`;
+  }
+}
+
+$('empty').addEventListener('click', e => {
+  if (e.target.closest('[data-open-settings]')) openSettings();
+  else if (e.target.closest('[data-scan]')) runTask('Scan', scanFn());
+  else if (e.target.closest('[data-reset]')) resetFilters();
+});
+
+function updateActionButtons() {
+  if (running) return;
+  const d = detailFilter();
+  const lc = lookupCandidates().length;
+  const cap = Math.max(1, +$('enrichCap').value || 1);
+  const n = Math.min(lc, cap);
+  const mins = Math.max(1, Math.ceil(n / budget()));
+  $('enrichLabel').textContent = n ? `Look up details for ${plural(n, 'player')}` : 'Details up to date';
+  $('enrichBtn').disabled = !n || !apiKey;
+  $('enrichBtn').title = n ? `${plural(n, 'API call')}, about ${mins} min${lc > cap ? `. ${lc.toLocaleString()} need it; raise the limit in Settings.` : ''}` : (d.active ? 'Every matching player already has fresh details.' : 'Scan some players first.');
+  $('enrichBtn').classList.toggle('primary', !!n);
+
+  if (!ffsKey) { $('ffsLabel').textContent = 'Set up FFScouter'; $('ffsBtn').disabled = false; $('ffsBtn').title = 'Add a registered FFScouter key in Settings for stat estimates and Fair Fight.'; }
+  else {
+    const fc = ffsCandidates().length, req = Math.ceil(Math.min(fc, FFS_BATCH * 30) / FFS_BATCH);
+    $('ffsLabel').textContent = fc ? `FFScouter estimates (${plural(req, 'request')})` : 'FFScouter up to date';
+    $('ffsBtn').disabled = !fc;
+    $('ffsBtn').title = fc ? `${fc.toLocaleString()} players, sent to ffscouter.com. Doesn't use your Torn API budget.` : '';
+  }
+  const fac = factionCandidates().length;
+  $('factionLabel').textContent = fac ? `Faction names (${Math.min(fac, 150)})` : 'Faction names';
+  $('factionBtn').disabled = !fac || !apiKey;
+  $('factionBtn').title = fac ? `Looks up names for ${plural(Math.min(fac, 150), 'faction')} shown (1 call each, kept 7 days).` : 'All faction names shown are known.';
+}
+
+// ---------- filter summary (the readable sentence above the table) ----------
+function describeFilters() {
+  const out = [];
+  const v = id => $(id).value.trim();
+  const clear = (...ids) => () => ids.forEach(id => { $(id).value = ''; });
+  const range = (lo, hi, fmt, unitWord) => {
+    if (lo !== '' && hi !== '') return `${fmt(lo)}–${fmt(hi)}${unitWord}`;
+    if (lo !== '') return `${fmt(lo)}+${unitWord}`;
+    return `up to ${fmt(hi)}${unitWord}`;
+  };
+  if (v('fLvlMin') || v('fLvlMax')) out.push({ text: 'Level ' + range(v('fLvlMin'), v('fLvlMax'), x => x, ''), clear: clear('fLvlMin', 'fLvlMax') });
+  if (v('fLaMin') || v('fLaMax')) {
+    const u = $('fLaUnit').value === '3600' ? 'h' : 'd';
+    const lo = v('fLaMin'), hi = v('fLaMax');
+    const text = lo && !hi ? `Inactive ${lo}${u}+` : !lo && hi ? `Active in last ${hi}${u}` : `Last active ${lo}–${hi}${u} ago`;
+    out.push({ text, clear: clear('fLaMin', 'fLaMax') });
+  }
+  if (v('fAgeMin') || v('fAgeMax')) out.push({ text: 'Account ' + range(v('fAgeMin'), v('fAgeMax'), x => x, ' days'), clear: clear('fAgeMin', 'fAgeMax') });
+  if (v('fName')) out.push({ text: `Name has “${v('fName')}”`, clear: clear('fName') });
+  const nwMin = parseMoney(v('fNwMin')), nwMax = parseMoney(v('fNwMax'));
+  if (nwMin != null || nwMax != null) out.push({ text: 'Net worth ' + range(nwMin ?? '', nwMax ?? '', fmtMoney, ''), clear: clear('fNwMin', 'fNwMax') });
+  const fac = $('fFaction').value;
+  if (fac === 'none') out.push({ text: 'No faction', clear: clear('fFaction') });
+  if (fac === 'in') out.push({ text: 'In a faction', clear: clear('fFaction') });
+  if (fac === 'id' && v('fFactionId')) out.push({ text: `Faction #${v('fFactionId')}`, clear: clear('fFaction', 'fFactionId') });
+  const bsMin = parseMoney(v('fBsMin')), bsMax = parseMoney(v('fBsMax'));
+  if (bsMin != null || bsMax != null) out.push({ text: 'Stats ' + range(bsMin ?? '', bsMax ?? '', fmtCompact, ''), clear: clear('fBsMin', 'fBsMax') });
+  if (v('fFfMin') || v('fFfMax')) out.push({ text: 'Fair Fight ' + range(v('fFfMin'), v('fFfMax'), x => x, ''), clear: clear('fFfMin', 'fFfMax') });
+  const jobs = [...$('fJob').selectedOptions].map(o => o.textContent);
+  if (jobs.length) out.push({ text: jobs.length <= 2 ? jobs.join(' or ') : `${jobs.length} job types`, clear: () => [...$('fJob').options].forEach(o => o.selected = false) });
+  if (v('fPos')) out.push({ text: `Position “${v('fPos')}”`, clear: clear('fPos') });
+  if (v('fStars')) out.push({ text: `Company ${v('fStars')}★+`, clear: clear('fStars') });
+  const sts = [...document.querySelectorAll('#fStatus input:checked')].map(i => i.value);
+  if (sts.length) out.push({ text: sts.join(' or '), clear: () => document.querySelectorAll('#fStatus input').forEach(i => i.checked = false) });
+  if ($('fDonator').value) out.push({ text: $('fDonator').value === 'yes' ? 'Donators' : 'Non-donators', clear: clear('fDonator') });
+  if (v('fProp')) out.push({ text: `Property “${v('fProp')}”`, clear: clear('fProp') });
+  return out;
+}
+let summaryItems = [];
+function renderSummary() {
+  summaryItems = describeFilters();
+  const view = $('fView').value;
+  const lead = view === 'watch' ? 'Watchlist' : view === 'hidden' ? 'Hidden players' : 'All scanned players';
+  $('summary').innerHTML = `<span class="lead">${lead}${summaryItems.length ? ':' : ', no filters.'}</span>` +
+    summaryItems.map((it, i) => `<button type="button" class="chip-x" data-i="${i}" aria-label="Remove filter: ${esc(it.text)}">${esc(it.text)}${icon('x')}</button>`).join('');
+}
+$('summary').addEventListener('click', e => {
+  const b = e.target.closest('.chip-x'); if (!b) return;
+  summaryItems[+b.dataset.i]?.clear();
+  syncFactionId(); saveForm(); render();
+});
+
+function updateGroupCounts() {
+  const groups = {
+    activity: ['fLaMin', 'fLaMax'],
+    level: ['fLvlMin', 'fLvlMax', 'fAgeMin', 'fAgeMax', 'fName'],
+    wealth: ['fNwMin', 'fNwMax', 'fFaction'],
+    stats: ['fBsMin', 'fBsMax', 'fFfMin', 'fFfMax'],
+    job: ['fPos', 'fStars', 'fDonator', 'fProp'],
+  };
+  for (const [g, ids] of Object.entries(groups)) {
+    let n = ids.filter(id => $(id).value.trim() !== '').length;
+    if (g === 'job') n += ($('fJob').selectedOptions.length ? 1 : 0) + (document.querySelector('#fStatus input:checked') ? 1 : 0);
+    const el = document.querySelector(`.group[data-group="${g}"] .count`);
+    el.hidden = !n; el.textContent = n;
+  }
+}
+
 $('thead').addEventListener('click', e => {
-  const th = e.target.closest('th'); if (!th) return;
-  const k = th.dataset.k;
-  if (COLS.find(c => c.key === k)?.nosort) return;
-  if (k === sortKey) sortDir = -sortDir; else { sortKey = k; sortDir = ['name', 'jobLabel', 'faction', 'note', 'position', 'company'].includes(k) ? 1 : -1; }
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  const k = b.dataset.k;
+  if (k === sortKey) sortDir = -sortDir; else { sortKey = k; sortDir = ['name', 'jobLabel', 'faction', 'note', 'position', 'company', 'status', 'property'].includes(k) ? 1 : -1; }
   render();
+  document.querySelector(`#thead button[data-k="${k}"]`)?.focus();
 });
 
 $('tbody').addEventListener('click', e => {
@@ -831,17 +1323,19 @@ $('tbody').addEventListener('click', e => {
   const r = rows.get(id);
   const act = btn.dataset.act;
   if (act === 'watch') {
-    if (watch[id]) delete watch[id]; else watch[id] = { name: r?.name || String(id), note: '', t: Date.now() };
+    if (watch[id]) { delete watch[id]; toast(`Removed ${r?.name || id} from watchlist`); }
+    else { watch[id] = { name: r?.name || String(id), note: '', t: Date.now() }; toast(`Watching ${r?.name || id}`); }
     saveWatch();
   } else if (act === 'note') {
     const cur = watch[id]?.note || '';
-    const n = prompt(`Note for ${r?.name || id} (adds them to your watchlist):`, cur);
+    const n = prompt(`Note on ${r?.name || id}. Saving a note also adds them to your watchlist.`, cur);
     if (n == null) return;
     if (!watch[id]) watch[id] = { name: r?.name || String(id), note: '', t: Date.now() };
     watch[id].note = n.trim();
     saveWatch();
   } else if (act === 'hide') {
-    if (hidden[id]) delete hidden[id]; else hidden[id] = r?.name || String(id);
+    if (hidden[id]) { delete hidden[id]; toast(`${r?.name || id} is visible again`); }
+    else { hidden[id] = r?.name || String(id); toast(`Hid ${r?.name || id}. Find them under Hidden.`); }
     saveHidden();
   }
   render();
@@ -850,35 +1344,37 @@ $('tbody').addEventListener('click', e => {
 // ---------- column menu ----------
 function buildColMenu() {
   $('colMenu').innerHTML = COLS.filter(c => !c.fixed).map(c =>
-    `<label><input type="checkbox" data-col="${c.key}" ${hiddenCols.has(c.key) ? '' : 'checked'}>${c.key === 'hofval' ? 'HoF value' : c.label === '★' ? 'Company stars' : c.label}</label>`).join('');
+    `<label class="check"><input type="checkbox" data-col="${c.key}" ${hiddenCols.has(c.key) ? '' : 'checked'}>${c.key === 'hofval' ? 'Scanned list value' : c.label}</label>`).join('');
 }
 $('colMenu').addEventListener('change', e => {
   const k = e.target.dataset.col; if (!k) return;
   if (e.target.checked) hiddenCols.delete(k); else hiddenCols.add(k);
-  store.set('tps_cols', [...hiddenCols]);
+  store.set('tps_cols2', [...hiddenCols]);
   render();
 });
-document.addEventListener('click', e => { const d = document.querySelector('details.cols'); if (d.open && !d.contains(e.target)) d.open = false; });
+document.addEventListener('click', e => { const d = $('colsMenu'); if (d.open && !d.contains(e.target)) d.open = false; });
 
 // ---------- running tasks ----------
 const TASK_BTNS = ['scanBtn', 'continueBtn', 'enrichBtn', 'myLevelBtn', 'factionBtn', 'ffsBtn'];
 async function runTask(name, fn, needsTornKey = true) {
   if (running) return;
-  if (needsTornKey && !apiKey) { log('Enter and save an API key first.', 'err'); $('apiKey').focus(); return; }
+  if (needsTornKey && !apiKey) { openSettings(); $('apiKey').focus(); toast('Add your Torn API key first'); return; }
   running = true; stopFlag = false;
   $('stopBtn').disabled = false;
   TASK_BTNS.forEach(id => $(id).disabled = true);
   setProgress(0);
   const t0 = Date.now();
+  let failed = false;
   try { await fn(); log(`${name} finished in ${Math.round((Date.now() - t0) / 1000)}s.`); }
   catch (e) {
-    if (e instanceof StopError) log(`${name} stopped.`, 'warn');
+    failed = true;
+    if (e instanceof StopError) { log(`${name} stopped.`, 'warn'); setStatus(`${esc(name)} stopped.`); }
     else log(e.message, 'err');
   } finally {
     running = false;
     $('stopBtn').disabled = true;
     TASK_BTNS.forEach(id => $(id).disabled = false);
-    setStatus('Idle');
+    if (!failed) setStatus(`${esc(name)} done.`);
     render();
     saveCache(); saveRows(); saveWatch(); idb.set('ffcache', ffCache);
   }
@@ -886,26 +1382,26 @@ async function runTask(name, fn, needsTornKey = true) {
 
 async function fetchHof(cat, offset, limit = 100) {
   const d = await api('/torn/hof', { cat, limit, offset });
-  if (d.error) throw new Error(`HoF error: ${d.error.error}`);
+  if (d.error) throw new Error(`Hall of Fame error: ${d.error.error}`);
   return d.hof || [];
 }
 
-// Scan pages starting at cursor.offset; updates cursor as it goes so "Continue" resumes exactly.
+// Scan pages starting at cursor.offset; updates cursor as it goes so "Scan more" resumes exactly.
 async function scanPages() {
   const pages = Math.max(1, +$('maxPages').value || 1);
   const { cat, lvlMin } = cursor;
   lastCat = cat;
   for (let p = 0; p < pages; p++) {
-    setStatus(`Scanning <b>${esc(cat)}</b> page ${p + 1}/${pages} (from #${(cursor.offset + 1).toLocaleString()})`);
+    setStatus(`Scanning <b>${esc(CAT_LABELS[cat] || cat)}</b>: ${((p) * 100).toLocaleString()} of ${(pages * 100).toLocaleString()} players (from #${(cursor.offset + 1).toLocaleString()})`);
     const hof = await fetchHof(cat, cursor.offset);
     hof.forEach(h => upsertHof(h, cat));
     cursor.offset += hof.length;
     setProgress((p + 1) / pages);
     scheduleRender();
-    if (hof.length < 100) { log('Reached the end of the Hall of Fame.'); cursor = null; return; }
-    if (lvlMin != null && hof[hof.length - 1].level < lvlMin) { log('Passed the bottom of the level band.'); cursor = null; return; }
+    if (hof.length < 100) { log('Reached the end of this Hall of Fame list.'); cursor = null; return; }
+    if (lvlMin != null && hof[hof.length - 1].level < lvlMin) { log('Reached the bottom of your level range.'); cursor = null; return; }
   }
-  log(`Scanned ${pages} page(s). Press "Continue ▸" to scan further from #${(cursor.offset + 1).toLocaleString()}.`);
+  log(`Scanned ${(pages * 100).toLocaleString()} players. Press “Scan more” to continue from #${(cursor.offset + 1).toLocaleString()}.`);
 }
 
 async function scanCategory() {
@@ -915,7 +1411,7 @@ async function scanCategory() {
 
 async function scanLevelBand() {
   const lvlMax = numOrNull('fLvlMax'), lvlMin = numOrNull('fLvlMin');
-  if (lvlMax == null || lvlMin == null) throw new Error('Set Level min and max (or click "Use my level") for level-band mode.');
+  if (lvlMax == null || lvlMin == null) throw new Error('Set a level range in Filters (or press “Use my level”) to scan your level range.');
   const probeCache = new Map();
   const probe = async off => {
     if (probeCache.has(off)) return probeCache.get(off);
@@ -925,32 +1421,29 @@ async function scanLevelBand() {
     return lvl;
   };
   // find first offset whose level <= lvlMax (Level HoF is sorted high -> low)
-  setStatus('Locating your level band…');
+  setStatus(`Finding level ${lvlMax} in the Hall of Fame…`);
   let lo = 0, hi = 1024;
   while ((await probe(hi)) > lvlMax) { lo = hi; hi *= 2; if (hi > 1e8) break; }
   while (lo < hi) {
     const mid = Math.floor((lo + hi) / 2);
     const lvl = await probe(mid);
     if (lvl !== -1 && lvl > lvlMax) lo = mid + 1; else hi = mid;
-    setStatus(`Locating level ${lvlMax} in HoF… (#${(lo + 1).toLocaleString()}–#${(hi + 1).toLocaleString()})`);
+    setStatus(`Finding level ${lvlMax} in the Hall of Fame… (around #${(lo + 1).toLocaleString()})`);
   }
-  log(`Level ${lvlMax} and below starts around HoF #${(lo + 1).toLocaleString()} (${probeCache.size} probe calls).`);
+  log(`Level ${lvlMax} starts around Hall of Fame #${(lo + 1).toLocaleString()} (found in ${probeCache.size} calls).`);
   cursor = { cat: 'level', offset: lo, lvlMin };
   await scanPages();
 }
 
 async function enrich() {
-  const b = baseFilter(), d = detailFilter();
   const cap = Math.max(1, +$('enrichCap').value || 1);
-  const watchView = $('fView').value === 'watch';
-  const lookAll = !d.active || watchView;   // no detail filters (or refreshing watchlist): look up everything shown
-  const todo = [...rows.values()].filter(r => b(r) && (lookAll ? !cacheFresh(r.id) : d.needsLookup(r))).slice(0, cap);
-  if (!todo.length) { log('Nothing to look up. Everything matching is already cached.'); return; }
+  const todo = lookupCandidates().slice(0, cap);
+  if (!todo.length) { log('Nothing to look up. Every matching player already has fresh details.'); return; }
   const rpm = budget();
-  log(`Looking up ${todo.length} players (~${Math.ceil(todo.length / rpm)} min at ${rpm}/min).`);
+  log(`Looking up ${plural(todo.length, 'player')} (about ${Math.ceil(todo.length / rpm)} min at ${rpm}/min).`);
   let done = 0;
   for (const r of todo) {
-    setStatus(`Looking up <b>${done + 1}/${todo.length}</b>: ${esc(r.name)}`);
+    setStatus(`Looking up details: <b>${done + 1} of ${todo.length}</b> · ${esc(r.name)}`);
     const data = await api(`/user/${r.id}`, { selections: 'profile,job,personalstats', stat: 'networth,criminaloffenses' });
     if (data.error) log(`Skipped ${r.name} [${r.id}]: ${data.error.error}`, 'warn');
     else {
@@ -966,13 +1459,12 @@ async function enrich() {
 }
 
 async function resolveFactions() {
-  const fresh = id => factions[id] && Date.now() - factions[id].t < 7 * 864e5;
-  const ids = [...new Set(visibleRows().map(r => r.faction_id).filter(id => id && !fresh(id)))].slice(0, 150);
-  if (!ids.length) { log('All faction names in view are already known.'); return; }
-  log(`Looking up ${ids.length} faction names…`);
+  const ids = factionCandidates().slice(0, 150);
+  if (!ids.length) { log('All faction names shown are already known.'); return; }
+  log(`Looking up ${plural(ids.length, 'faction')}…`);
   let done = 0;
   for (const id of ids) {
-    setStatus(`Faction <b>${done + 1}/${ids.length}</b>`);
+    setStatus(`Looking up faction names: <b>${done + 1} of ${ids.length}</b>`);
     const d = await api(`/faction/${id}/basic`);
     if (!d.error && d.basic) factions[id] = { name: d.basic.name, tag: d.basic.tag, t: Date.now() };
     done++;
@@ -982,43 +1474,31 @@ async function resolveFactions() {
   store.set('tps_factions', factions);
 }
 
-async function useMyLevel() {
-  const d = await api('/user/profile');
-  if (d.error) throw new Error(d.error.error);
-  const lvl = d.profile.level, s = Math.max(0, +$('levelSpread').value || 0);
-  $('fLvlMin').value = Math.max(1, lvl - s);
-  $('fLvlMax').value = Math.min(100, lvl + s);
-  saveForm();
-  log(`Your level is ${lvl}; level filter set to ${lvl - s}–${lvl + s}.`);
-}
-
 // FFScouter: batch up to 205 players per request. Its limits are separate from Torn's; we still space calls out politely.
 async function fetchFfs() {
-  if (!ffsKey) throw new FatalApiError('Enter your FFScouter key first (sign up at ffscouter.com).');
-  const b = baseFilter();
-  const fresh = id => ffCache[id] && Date.now() - ffCache[id].t < 12 * 3600e3;
-  const ids = [...rows.values()].filter(r => b(r) && !fresh(r.id)).map(r => r.id).slice(0, FFS_BATCH * 30);
-  if (!ids.length) { log('FFScouter: everything shown already has a fresh estimate.'); return; }
+  if (!ffsKey) throw new FatalApiError('Add a registered FFScouter key in Settings first.');
+  const ids = ffsCandidates().slice(0, FFS_BATCH * 30);
+  if (!ids.length) { log('FFScouter: every matching player already has a fresh estimate.'); return; }
   const batches = Math.ceil(ids.length / FFS_BATCH);
-  log(`FFScouter: fetching ${ids.length} players in ${batches} request(s)…`);
+  log(`FFScouter: getting ${plural(ids.length, 'player')} in ${plural(batches, 'request')}…`);
   for (let i = 0, n = 0; i < ids.length; ) {
     if (stopFlag) throw new StopError();
     const batch = ids.slice(i, i + FFS_BATCH);
-    setStatus(`FFScouter request <b>${n + 1}/${batches}</b>`);
+    setStatus(`Getting FFScouter estimates: <b>request ${n + 1} of ${batches}</b>`);
     let data;
     try {
       const res = await fetch(`${FFS_API}/get-stats?${new URLSearchParams({ key: ffsKey, targets: batch.join(',') })}`);
       data = await res.json();
-    } catch (e) { throw new Error(`FFScouter network error: ${e.message}`); }
+    } catch (e) { throw new Error(`Couldn't reach FFScouter: ${e.message}`); }
     if (!Array.isArray(data)) {
       const code = data && data.code;
       if (code === 20 || code === 21) {                 // rate limited: wait what they ask, then retry this batch
         const wait = Math.min(120, +data.retry_after_seconds || 30);
-        log(`FFScouter rate limit, waiting ${wait}s…`, 'warn');
+        log(`FFScouter asked us to slow down. Waiting ${wait}s…`, 'warn');
         for (let s = 0; s < wait * 2; s++) { if (stopFlag) throw new StopError(); await sleep(500); }
         continue;
       }
-      if ([1, 2, 6].includes(code)) throw new FatalApiError(`FFScouter: ${data.error || 'invalid key'}. Register this key at ffscouter.com first.`);
+      if ([1, 2, 6].includes(code)) throw new FatalApiError(`FFScouter doesn't recognise this key. Register it at ffscouter.com, then try again.`);
       throw new Error(`FFScouter error${code ? ` (code ${code})` : ''}: ${data && data.error || 'unexpected response'}`);
     }
     const now = Date.now();
@@ -1037,7 +1517,17 @@ async function fetchFfs() {
     if (i < ids.length) await sleep(1000);
   }
   const known = ids.filter(id => ffCache[id] && ffCache[id].bs != null).length;
-  log(`FFScouter: estimates for ${known}/${ids.length} players.`);
+  log(`FFScouter: estimates for ${known.toLocaleString()} of ${ids.length.toLocaleString()} players.`);
+}
+
+async function useMyLevel() {
+  const d = await api('/user/profile');
+  if (d.error) throw new Error(d.error.error);
+  const lvl = d.profile.level, s = Math.max(0, +$('levelSpread').value || 0);
+  $('fLvlMin').value = Math.max(1, lvl - s);
+  $('fLvlMax').value = Math.min(100, lvl + s);
+  saveForm();
+  toast(`You're level ${lvl}. Showing levels ${Math.max(1, lvl - s)}–${Math.min(100, lvl + s)}.`);
 }
 
 function withAutoLookup(scanFn) {
@@ -1051,6 +1541,7 @@ function withAutoLookup(scanFn) {
 // ---------- CSV / clipboard ----------
 function exportCsv() {
   const vis = visibleRows();
+  if (!vis.length) { toast('Nothing to export yet'); return; }
   const head = ['id', 'name', 'level', 'est_stats', 'est_stats_source', 'fair_fight', 'networth', `hof_${lastCat}`, 'hof_pos', 'last_action_utc', 'age_days', 'job', 'position', 'stars', 'company', 'faction_id', 'faction_name', 'status', 'donator', 'property', 'watched', 'note'];
   const q = v => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
   const lines = [head.join(',')].concat(vis.map(r => [
@@ -1060,6 +1551,7 @@ function exportCsv() {
     watch[r.id] ? 'yes' : '', watch[r.id]?.note
   ].map(q).join(',')));
   download(`torn-players-${new Date().toISOString().slice(0, 10)}.csv`, lines.join('\n'), 'text/csv');
+  toast(`Exported ${plural(vis.length, 'player')}`);
 }
 function download(name, text, type) {
   const a = document.createElement('a');
@@ -1069,13 +1561,15 @@ function download(name, text, type) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 async function copyIds() {
-  const ids = visibleRows().map(r => r.id).join(',');
+  const vis = visibleRows();
+  if (!vis.length) { toast('No players to copy'); return; }
+  const ids = vis.map(r => r.id).join(',');
   try { await navigator.clipboard.writeText(ids); }
   catch { const t = document.createElement('textarea'); t.value = ids; document.body.append(t); t.select(); document.execCommand('copy'); t.remove(); }
-  toast(`Copied ${visibleRows().length} IDs`);
+  toast(`Copied ${plural(vis.length, 'player ID')}`);
 }
 
-// ---------- form persistence + presets ----------
+// ---------- form persistence + saved searches ----------
 const FORM_FIELDS = ['rpm','mode','cat','startPos','maxPages','levelSpread','fView','fLvlMin','fLvlMax','fLaMin','fLaMax','fLaUnit','fAgeMin','fAgeMax','fFaction','fFactionId','fName','fNwMin','fNwMax','fPos','fStars','fDonator','fProp','fBsMin','fBsMax','fFfMin','fFfMax','enrichCap','cacheHours'];
 const FILTER_FIELDS = ['fLvlMin','fLvlMax','fLaMin','fLaMax','fAgeMin','fAgeMax','fFaction','fFactionId','fName','fNwMin','fNwMax','fPos','fStars','fDonator','fProp','fBsMin','fBsMax','fFfMin','fFfMax'];
 function getForm() {
@@ -1087,12 +1581,19 @@ function getForm() {
   return o;
 }
 function setForm(o, fields = FORM_FIELDS) {
-  fields.forEach(id => { if (o[id] != null) $(id).value = o[id]; });
+  fields.forEach(id => {
+    if (o[id] == null) return;
+    const el = $(id);
+    el.value = o[id];
+    if (el.tagName === 'SELECT' && el.value !== String(o[id]) && id === 'maxPages') {   // custom page count from older versions
+      el.append(new Option((+o[id] * 100).toLocaleString(), o[id])); el.value = o[id];
+    }
+  });
   if (o.fJob) [...$('fJob').options].forEach(op => op.selected = o.fJob.includes(op.value));
   if (o.fStatus) document.querySelectorAll('#fStatus input').forEach(i => i.checked = o.fStatus.includes(i.value));
   if (o.autoLookup != null) $('autoLookup').checked = o.autoLookup;
   if (o.ffsAuto != null) $('ffsAuto').checked = o.ffsAuto;
-  syncMode();
+  syncMode(); syncFactionId(); syncView();
 }
 function saveForm() { store.set('tps_form', getForm()); }
 function loadForm() { const o = store.get('tps_form', null); if (o) setForm(o); }
@@ -1100,61 +1601,65 @@ function loadForm() { const o = store.get('tps_form', null); if (o) setForm(o); 
 function resetFilters() {
   FILTER_FIELDS.forEach(id => $(id).value = '');
   $('fLaUnit').value = '86400';
-  $('fView').value = 'all';
   [...$('fJob').options].forEach(o => o.selected = false);
   document.querySelectorAll('#fStatus input').forEach(i => i.checked = false);
-  saveForm(); render();
+  syncFactionId(); saveForm(); render();
+  toast('Filters cleared');
 }
 
 function buildPresetSel() {
   const sel = $('presetSel'), cur = sel.value;
-  sel.innerHTML = '<option value="">Saved presets…</option>' + Object.keys(presets).sort().map(n => `<option>${esc(n)}</option>`).join('');
+  sel.innerHTML = '<option value="">Choose a saved search…</option>' + Object.keys(presets).sort().map(n => `<option>${esc(n)}</option>`).join('');
   if (presets[cur]) sel.value = cur;
+  $('presetDel').hidden = !sel.value;
 }
 $('presetSel').addEventListener('change', e => {
+  $('presetDel').hidden = !e.target.value;
   const p = presets[e.target.value]; if (!p) return;
-  setForm(p); saveForm(); render(); toast(`Loaded "${e.target.value}"`);
+  setForm(p); saveForm(); render(); toast(`Loaded “${e.target.value}”`);
 });
 $('presetSave').addEventListener('click', () => {
-  const name = prompt('Name for this preset (scan settings + all filters):', $('presetSel').value || '');
+  const name = prompt('Name this search. It saves what you scan and all your filters.', $('presetSel').value || '');
   if (!name || !name.trim()) return;
-  const o = getForm(); delete o.rpm;
+  const o = getForm(); delete o.rpm; delete o.enrichCap; delete o.cacheHours;
   presets[name.trim()] = o;
-  store.set('tps_presets', presets); buildPresetSel(); $('presetSel').value = name.trim(); toast('Preset saved');
+  store.set('tps_presets', presets); buildPresetSel(); $('presetSel').value = name.trim(); $('presetDel').hidden = false;
+  toast(`Saved “${name.trim()}”`);
 });
 $('presetDel').addEventListener('click', () => {
   const n = $('presetSel').value; if (!n) return;
-  if (!confirm(`Delete preset "${n}"?`)) return;
-  delete presets[n]; store.set('tps_presets', presets); buildPresetSel();
+  if (!confirm(`Delete the saved search “${n}”?`)) return;
+  delete presets[n]; store.set('tps_presets', presets); buildPresetSel(); toast(`Deleted “${n}”`);
 });
 
 // Quick one-click filters that only touch the fields they're about.
 const QUICK = [
-  { label: 'Online < 1h', set: { fLaMin: '', fLaMax: '1', fLaUnit: '3600' } },
-  { label: 'Active < 24h', set: { fLaMin: '', fLaMax: '1', fLaUnit: '86400' } },
-  { label: 'Active < 7d', set: { fLaMin: '', fLaMax: '7', fLaUnit: '86400' } },
-  { label: 'Inactive 30d+', set: { fLaMin: '30', fLaMax: '', fLaUnit: '86400' } },
-  { label: 'Factionless', set: { fFaction: 'none' } },
+  { label: 'Online in last hour', set: { fLaMin: '', fLaMax: '1', fLaUnit: '3600' } },
+  { label: 'Active today', set: { fLaMin: '', fLaMax: '1', fLaUnit: '86400' } },
+  { label: 'Active this week', set: { fLaMin: '', fLaMax: '7', fLaUnit: '86400' } },
+  { label: 'Inactive 30+ days', set: { fLaMin: '30', fLaMax: '', fLaUnit: '86400' } },
+  { label: 'No faction', set: { fFaction: 'none' } },
+  { label: 'Worth $1b+', set: { fNwMin: '1b' } },
   { label: 'Unemployed', set: { fJob: ['none'] } },
   { label: 'City jobs', set: { fJob: CITY_JOBS.map(j => 'j' + j) } },
-  { label: 'Okay (attackable)', set: { fStatus: ['Okay'] } },
-  { label: 'Networth ≥ 1b', set: { fNwMin: '1b' } },
-  { label: 'New (< 1 yr)', set: { fAgeMin: '', fAgeMax: '365' } },
-  { label: 'Veteran (5+ yrs)', set: { fAgeMin: '1825', fAgeMax: '' } },
+  { label: 'Okay to attack', set: { fStatus: ['Okay'] } },
+  { label: 'New (under 1 year)', set: { fAgeMin: '', fAgeMax: '365' } },
+  { label: 'Veteran (5+ years)', set: { fAgeMin: '1825', fAgeMax: '' } },
 ];
 function buildChips() {
-  $('quickChips').innerHTML = QUICK.map((q, i) => `<span class="chip" data-q="${i}">${esc(q.label)}</span>`).join('');
+  $('quickChips').innerHTML = QUICK.map((q, i) => `<button type="button" data-q="${i}">${esc(q.label)}</button>`).join('');
 }
 $('quickChips').addEventListener('click', e => {
-  const c = e.target.closest('.chip'); if (!c) return;
+  const c = e.target.closest('button[data-q]'); if (!c) return;
   const q = QUICK[+c.dataset.q];
   setForm(q.set, Object.keys(q.set).filter(k => FORM_FIELDS.includes(k)));
-  saveForm(); render(); toast(q.label);
+  saveForm(); render();
 });
 
 // ---------- watchlist import / export ----------
 $('watchExport').addEventListener('click', () => {
   download(`torn-watchlist-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ watch, hidden }, null, 1), 'application/json');
+  toast('Watchlist exported');
 });
 $('watchImportBtn').addEventListener('click', () => $('watchImport').click());
 $('watchImport').addEventListener('change', async e => {
@@ -1168,14 +1673,15 @@ $('watchImport').addEventListener('change', async e => {
     }
     for (const [id, name] of Object.entries(o.hidden || {})) if (/^\d+$/.test(id)) hidden[id] = String(name).slice(0, 40);
     saveWatch(); saveHidden(); ensureWatchRows(); render();
-    toast(`Imported ${n} watched players`);
-  } catch (err) { log('Import failed: ' + err.message, 'err'); }
+    toast(`Imported ${plural(n, 'watched player')}`);
+  } catch (err) { log('That file couldn’t be imported: ' + err.message, 'err'); }
   e.target.value = '';
 });
 $('unhideAll').addEventListener('click', () => {
-  const n = Object.keys(hidden).length; if (!n) return;
-  if (!confirm(`Un-hide ${n} players?`)) return;
-  hidden = {}; saveHidden(); render();
+  const n = Object.keys(hidden).length;
+  if (!n) { toast('Nobody is hidden'); return; }
+  if (!confirm(`Show all ${plural(n, 'hidden player')} again?`)) return;
+  hidden = {}; saveHidden(); render(); toast('Everyone is visible again');
 });
 
 // ---------- UI wiring ----------
@@ -1187,58 +1693,91 @@ function buildJobSelect() {
   const g2 = document.createElement('optgroup'); g2.label = 'Companies';
   Object.entries(COMPANY_TYPES).sort((a, b) => a[1].localeCompare(b[1])).forEach(([id, n]) => g2.append(new Option(n, 'c' + id)));
   sel.append(g1, g2);
-  $('fStatus').innerHTML = STATUSES.map(s => `<label><input type="checkbox" value="${s}">${s}</label>`).join('');
+  $('fStatus').innerHTML = STATUSES.map(s => `<label class="check"><input type="checkbox" value="${s}">${s}</label>`).join('');
 }
 
 function syncMode() {
   const band = $('mode').value === 'levelband';
-  $('catOpts').hidden = band; $('bandOpts').hidden = !band;
+  $('catOpts').hidden = band; $('startWrap').hidden = band; $('bandOpts').hidden = !band;
+  const lo = $('fLvlMin').value, hi = $('fLvlMax').value;
+  $('bandNote').textContent = lo && hi ? `Levels ${lo}–${hi}, from your filters.` : 'Set a level range in Filters, or press “Use my level”.';
 }
+function syncFactionId() { $('fFactionId').hidden = $('fFaction').value !== 'id'; }
+function syncView() {
+  const v = $('fView').value;
+  document.querySelectorAll('.segmented button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+}
+document.querySelector('.segmented').addEventListener('click', e => {
+  const b = e.target.closest('button[data-view]'); if (!b) return;
+  $('fView').value = b.dataset.view; syncView(); saveForm(); render();
+});
+
+function openSettings() { if (!$('settings').open) $('settings').showModal(); }
+$('openSettings').addEventListener('click', openSettings);
+$('keyBadge').addEventListener('click', () => { openSettings(); $('apiKey').focus(); });
+$('closeSettings').addEventListener('click', () => $('settings').close());
+$('settings').addEventListener('click', e => { if (e.target === $('settings')) $('settings').close(); });   // click backdrop to close
+$('settings').addEventListener('close', () => render());
+
+$('toggleFilters').addEventListener('click', () => {
+  const open = document.body.classList.toggle('filters-open');
+  $('toggleFilters').setAttribute('aria-expanded', String(open));
+});
 
 const scanFn = () => withAutoLookup($('mode').value === 'levelband' ? scanLevelBand : scanCategory);
-document.querySelector('aside').addEventListener('input', () => { saveForm(); scheduleRender(); });
-document.querySelector('aside').addEventListener('change', () => { saveForm(); scheduleRender(); });
-$('mode').addEventListener('change', syncMode);
+const onFormChange = e => {
+  if (!e.target.closest('#filters, .scanbar, #settings')) return;
+  if (['apiKey', 'ffsKey'].includes(e.target.id)) return;
+  if (e.target.id === 'fFaction') syncFactionId();
+  if (['mode', 'fLvlMin', 'fLvlMax'].includes(e.target.id)) syncMode();
+  saveForm(); scheduleRender();
+};
+document.addEventListener('input', onFormChange);
+document.addEventListener('change', onFormChange);
 $('saveKey').addEventListener('click', saveKey);
 $('apiKey').addEventListener('keydown', e => { if (e.key === 'Enter') saveKey(); });
 $('rememberKey').addEventListener('change', () => {
-  if (!$('rememberKey').checked) { store.del('tps_key'); store.del('tps_ffs_key'); }
+  if (!$('rememberKey').checked) { store.del('tps_key'); store.del('tps_ffs_key'); store.del('tps_key_type'); }
   else { if (apiKey) store.set('tps_key', apiKey); if (ffsKey) store.set('tps_ffs_key', ffsKey); }
 });
 function setFfsKey(k) {
   ffsKey = k.trim();
   if (ffsKey && $('rememberKey').checked) store.set('tps_ffs_key', ffsKey); else store.del('tps_ffs_key');
+  render();
 }
 $('ffsKey').addEventListener('change', () => setFfsKey($('ffsKey').value));
 $('ffsUseTorn').addEventListener('click', () => {
-  if (!apiKey) { log('Save your Torn key first.', 'err'); return; }
-  $('ffsKey').value = apiKey; setFfsKey(apiKey); toast('FFScouter key set');
+  if (!apiKey) { toast('Save your Torn key first'); $('apiKey').focus(); return; }
+  $('ffsKey').value = apiKey; setFfsKey(apiKey); toast('FFScouter will use your Torn key');
 });
-$('ffsBtn').addEventListener('click', () => runTask('FFScouter', fetchFfs, false));
 $('rpm').addEventListener('change', () => { $('rpm').value = budget(); });
 $('scanBtn').addEventListener('click', () => runTask('Scan', scanFn()));
-$('continueBtn').addEventListener('click', () => { if (cursor) runTask('Continue', withAutoLookup(scanPages)); });
-$('enrichBtn').addEventListener('click', () => runTask('Lookup', enrich));
+$('continueBtn').addEventListener('click', () => { if (cursor) runTask('Scan', withAutoLookup(scanPages)); });
+$('enrichBtn').addEventListener('click', () => runTask('Detail lookup', enrich));
+$('ffsBtn').addEventListener('click', () => { if (!ffsKey) { openSettings(); $('ffsKey').focus(); return; } runTask('FFScouter', fetchFfs, false); });
 $('factionBtn').addEventListener('click', () => runTask('Faction names', resolveFactions));
-$('myLevelBtn').addEventListener('click', () => runTask('My level', useMyLevel));
-$('stopBtn').addEventListener('click', () => { stopFlag = true; });
+$('myLevelBtn').addEventListener('click', () => runTask('Your level', useMyLevel));
+$('stopBtn').addEventListener('click', () => { stopFlag = true; setStatus('Stopping…'); });
 $('resetFilters').addEventListener('click', resetFilters);
 $('clearBtn').addEventListener('click', () => {
-  if (rows.size && !confirm('Clear all scanned results? (Cached lookups, watchlist and notes are kept.)')) return;
-  rows.clear(); cursor = null; ensureWatchRows(); render(); saveRows();
+  if (rows.size && !confirm('Clear all scanned players? Your watchlist, notes and looked-up details are kept.')) return;
+  rows.clear(); cursor = null; ensureWatchRows(); render(); saveRows(); toast('Scanned players cleared');
 });
 $('clearCacheBtn').addEventListener('click', () => {
   profileCache = {}; saveCache();
   rows.forEach(r => { delete r.enriched; });
-  log('Lookup cache cleared.'); render();
+  render(); toast('Looked-up details forgotten');
 });
 $('csvBtn').addEventListener('click', exportCsv);
 $('copyIdsBtn').addEventListener('click', copyIds);
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && running) { stopFlag = true; e.preventDefault(); }
+  if (e.key === 'Escape' && running && !$('settings').open) { stopFlag = true; e.preventDefault(); }
   else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !running) { runTask('Scan', scanFn()); e.preventDefault(); }
-  else if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { $('fName').focus(); e.preventDefault(); }
+  else if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !$('settings').open) {
+    $('filters').closest('.layout') && document.body.classList.add('filters-open');
+    $('fName').closest('details').open = true; $('fName').focus(); e.preventDefault();
+  }
 });
 
 // ---------- init ----------
@@ -1248,9 +1787,11 @@ document.addEventListener('keydown', e => {
   buildColMenu();
   buildPresetSel();
   loadForm();
-  saveWatch();
+  saveWatch(); saveHidden();
   if (ffsKey) $('ffsKey').value = ffsKey;
-  if (apiKey) { $('apiKey').value = apiKey; $('keyInfo').className = 'keyinfo ok'; $('keyInfo').textContent = 'Key loaded from this browser.'; }
+  if (apiKey) { $('apiKey').value = apiKey; $('keyInfo').className = 'keystate ok'; $('keyInfo').textContent = 'Key saved in this browser.'; }
+  updateKeyBadge();
+  render();
 
   // one-time migration from the old localStorage cache
   const legacy = store.get('tps_cache', null);
@@ -1263,7 +1804,7 @@ document.addEventListener('keydown', e => {
   const meta = await idb.get('meta');
   if (meta) { lastCat = meta.lastCat || lastCat; cursor = meta.cursor || null; }
   ensureWatchRows();
-  if (rows.size) log(`Restored ${rows.size.toLocaleString()} players from your last session.`);
+  if (rows.size) log(`Restored ${plural(rows.size, 'player')} from your last visit.`);
   render();
 })();
 </script>
