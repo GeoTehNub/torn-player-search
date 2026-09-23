@@ -391,11 +391,19 @@
             <option value="3">In the last 3 days</option>
             <option value="7">In the last week</option>
           </select>
-          <span class="field-note">Bazaar, item market, points or auction sales. Torn records these once a day.</span>
+          <span class="field-note">Bazaar, item market, points, auction or trade. Torn records these once a day.</span>
         </div>
         <div>
-          <label class="field" for="fSalesMin">Sales this week, at least</label>
+          <label class="field" for="fSalesMin">Total sales this week, at least</label>
           <input type="text" id="fSalesMin" placeholder="Any, e.g. 50m" autocomplete="off">
+        </div>
+        <div>
+          <label class="field" for="fBzRevMin">Bazaar revenue this week, at least</label>
+          <input type="text" id="fBzRevMin" placeholder="Any, e.g. 20m" autocomplete="off">
+        </div>
+        <div>
+          <label class="field" for="fImRevMin">Item market revenue this week, at least</label>
+          <input type="text" id="fImRevMin" placeholder="Any, e.g. 20m" autocomplete="off">
         </div>
         <label class="check"><input type="checkbox" id="fBazaarOpen"> Bazaar open with items</label>
       </div>
@@ -562,9 +570,11 @@ const DEFAULT_RPM = 80;
 const FFS_API = 'https://ffscouter.com/api/v1';
 const FFS_BATCH = 205;
 const CLOTHING_STORE = 5;                 // company type id; 7★ gives employees 75% mug protection
-const SALE_STATS = ['bazaarprofit', 'itemmarketrevenue', 'pointssold', 'auctionsells'];
+// Stats that change when money comes in. bazaarprofit = total bazaar sales income; itemmarketrevenue = item market sales income.
+const SALE_STATS = ['bazaarprofit', 'itemmarketrevenue', 'pointssold', 'auctionsells', 'trades'];
+const SALE_SOURCE = { bazaarprofit: 'Bazaar', itemmarketrevenue: 'Item market', pointssold: 'Points', auctionsells: 'Auction', trades: 'Trade' };
 const MONEY_STATS = ['bazaarprofit', 'itemmarketrevenue'];
-const CHECK_STATS = [...SALE_STATS, 'bazaarsales', 'networth', 'criminaloffenses', 'moneymugged', 'defendslost', 'traveltimes'];  // 10 max
+const CHECK_STATS = [...SALE_STATS, 'networth', 'criminaloffenses', 'moneymugged'];  // 10 max
 const ATTACKABLE = new Set(['Okay']);
 
 // Rank-based estimate (TornTools method): rank triggers not explained by level/crimes/networth come from battle stats.
@@ -823,9 +833,19 @@ function applyCheck(r, d, t) {
   r.crimes = stats.criminaloffenses?.value ?? r.crimes;
   r.moneyMugged = stats.moneymugged?.value;
   r.defendsLost = stats.defendslost?.value;
-  const saleTs = Math.max(0, ...SALE_STATS.map(n => stats[n]?.value ? stats[n].timestamp || 0 : 0));
-  r.saleDays = saleTs ? Math.max(0, Math.floor((dayStart() - saleTs) / 86400)) : null;
-  r.sales7d = d.sales7d ?? (r.saleDays != null && r.saleDays > 7 ? 0 : null);
+  const daysSince = n => stats[n]?.value && stats[n].timestamp ? Math.max(0, Math.floor((dayStart() - stats[n].timestamp) / 86400)) : null;
+  r.saleDays = null; r.saleSource = null;
+  for (const n of SALE_STATS) {
+    const dd = daysSince(n);
+    if (dd != null && (r.saleDays == null || dd < r.saleDays)) { r.saleDays = dd; r.saleSource = SALE_SOURCE[n]; }
+  }
+  // Revenue split by where it came from: this week's amount (from the history call) and lifetime total.
+  const rev7 = d.rev7d || {};
+  r.bzRevDays = daysSince('bazaarprofit'); r.imRevDays = daysSince('itemmarketrevenue');
+  r.bzRevLife = stats.bazaarprofit?.value ?? null; r.imRevLife = stats.itemmarketrevenue?.value ?? null;
+  r.bzRev7d = rev7.bazaarprofit ?? (r.bzRevDays == null || r.bzRevDays > 7 ? 0 : null);
+  r.imRev7d = rev7.itemmarketrevenue ?? (r.imRevDays == null || r.imRevDays > 7 ? 0 : null);
+  r.sales7d = d.sales7d ?? (r.bzRev7d != null && r.imRev7d != null ? r.bzRev7d + r.imRev7d : null);
   if (watch[r.id] && r.name) watch[r.id].name = r.name;
 }
 
@@ -869,11 +889,13 @@ function mugScore(r) {
   if (!r.checkedAt) return null;
   const why = [];
   const d = r.saleDays;
-  const rec = d == null ? 0.03 : d === 0 ? 1 : d === 1 ? 0.8 : d <= 3 ? 0.5 : d <= 7 ? 0.25 : 0.05;
-  why.push(d == null ? 'No recorded sales' : `Last sale ${soldLabel(d).toLowerCase()}`);
+  let rec = d == null ? 0.03 : d === 0 ? 1 : d === 1 ? 0.8 : d <= 3 ? 0.5 : d <= 7 ? 0.25 : 0.05;
+  if (r.saleSource === 'Trade' || r.saleSource === 'Points' || r.saleSource === 'Auction') rec *= 0.7;   // may not have been paid in cash
+  why.push(d == null ? 'No recorded sales' : `Last sale ${soldLabel(d).toLowerCase()} (${(r.saleSource || 'sale').toLowerCase()})`);
   const amt = r.sales7d;
   const amtF = amt ? clamp((Math.log10(amt) - 5) / 5, 0.05, 1) : 0.15;   // $100k → 0, $10b → 1
-  if (amt) why.push(`${fmtMoney(amt)} in sales this week`);
+  if (r.bzRev7d) why.push(`Bazaar revenue this week: ${fmtMoney(r.bzRev7d)}`);
+  if (r.imRev7d) why.push(`Item market revenue this week: ${fmtMoney(r.imRev7d)}`);
   let cash = rec * (0.35 + 0.65 * amtF);
   if (r.bzOpen && r.bzValue > 0) {
     cash = Math.min(1, cash + 0.08 + 0.12 * clamp((Math.log10(r.bzValue) - 6) / 4, 0, 1));
@@ -898,7 +920,7 @@ function readFilters() {
     view: $('fView').value,
     ffMax: numOrNull('fFfMax'), bsMax: parseMoney($('fBsMax').value), knownOnly: $('fKnownOnly').checked,
     soldWithin: $('fSoldWithin').value === '' ? null : +$('fSoldWithin').value,
-    salesMin: parseMoney($('fSalesMin').value), bazaarOpen: $('fBazaarOpen').checked,
+    salesMin: parseMoney($('fSalesMin').value), bzRevMin: parseMoney($('fBzRevMin').value), imRevMin: parseMoney($('fImRevMin').value), bazaarOpen: $('fBazaarOpen').checked,
     lvlMin: numOrNull('fLvlMin'), lvlMax: numOrNull('fLvlMax'), active: $('fActive').value,
     attackable: $('fAttackable').checked, noClothing: $('fNoClothing').checked, noFaction: $('fNoFaction').checked,
   };
@@ -926,10 +948,12 @@ function matches(r, f, optimistic = false) {
   if (f.bsMax != null && s && s.min > f.bsMax) return false;
   if (f.knownOnly && ff == null && !s && !may) return false;
   // cash (needs a check)
-  const cashSet = f.soldWithin != null || f.salesMin != null || f.bazaarOpen;
+  const cashSet = f.soldWithin != null || f.salesMin != null || f.bzRevMin != null || f.imRevMin != null || f.bazaarOpen;
   if (cashSet && unknown) return may;
   if (f.soldWithin != null && (r.saleDays == null || r.saleDays > f.soldWithin)) return false;
   if (f.salesMin != null && !(r.sales7d >= f.salesMin)) return false;
+  if (f.bzRevMin != null && !(r.bzRev7d >= f.bzRevMin)) return false;
+  if (f.imRevMin != null && !(r.imRev7d >= f.imRevMin)) return false;
   if (f.bazaarOpen && !(r.bzOpen && r.bzItems > 0)) return false;
   return true;
 }
@@ -953,6 +977,15 @@ const attackUrl = id => `https://www.torn.com/loader.php?sid=attack&user2ID=${id
 const bazaarUrl = id => `https://www.torn.com/bazaar.php?userId=${id}`;
 const iconBtn = (act, name, label, on) => `<button type="button" class="icon-btn${on ? ' on' : ''}" data-act="${act}" aria-label="${esc(label)}" title="${esc(label)}">${icon(name)}</button>`;
 const displayName = r => r.name || (r.bazaarName ? `“${r.bazaarName}”` : `#${r.id}`);
+
+// This week's revenue from one market, with when it last changed and the lifetime total on hover.
+function revCell(week, days, life, where) {
+  if (week == null && life == null) return '<span class="muted">–</span>';
+  const title = `Lifetime ${where} revenue: ${life != null ? fmtMoney(life) : 'unknown'}${days != null ? `. Last sale ${soldLabel(days).toLowerCase()}.` : ''}`;
+  if (week == null) return `<span class="muted" title="${esc(title)}">${days != null ? soldLabel(days) : '–'}</span>`;
+  if (!week) return `<div class="two-line" title="${esc(title)}"><span class="muted">$0 this week</span><small>${days != null ? 'last ' + soldLabel(days).toLowerCase() : 'never'}</small></div>`;
+  return `<div class="two-line" title="${esc(title)}"><span${days != null && days <= 1 ? ' class="hot"' : ''}>${fmtMoney(week)}</span><small>this week · ${soldLabel(days).toLowerCase()}</small></div>`;
+}
 
 function statusCell(r) {
   if (!r.state) return r.checkedAt ? '' : '<span class="muted">–</span>';
@@ -981,13 +1014,15 @@ const COLS = [
       const detail = [ff, s ? s.label : ''].filter(Boolean).join(' · ');
       return `<div class="two-line"><span class="win-${w.label}">${w.label}</span><small>${esc(detail || 'Get Fair Fight to know')}</small></div>`;
     } },
-  { key: 'sales', label: 'Recent sales', get: r => r.checkedAt ? (r.saleDays == null ? -1 : (8 - Math.min(r.saleDays, 8)) * 1e13 + (r.sales7d || 0)) : null, render: r => {
+  { key: 'sales', label: 'Last sale', get: r => r.checkedAt ? (r.saleDays == null ? -1 : (8 - Math.min(r.saleDays, 8)) * 1e13 + (r.sales7d || 0)) : null, render: r => {
       if (!r.checkedAt) return '<span class="muted">–</span>';
       if (r.saleDays == null) return '<span class="muted">None recorded</span>';
       const hot = r.saleDays <= 1 ? ' class="hot"' : '';
-      return `<div class="two-line"><span${hot}>${soldLabel(r.saleDays)}</span><small>${r.sales7d ? fmtMoney(r.sales7d) + ' this week' : r.saleDays > 7 ? 'nothing this week' : 'points or auctions'}</small></div>`;
+      return `<div class="two-line"><span${hot}>${soldLabel(r.saleDays)}</span><small>${esc(r.saleSource || '')}</small></div>`;
     } },
-  { key: 'bazaar', label: 'Bazaar', get: r => r.bzOpen ? (r.bzValue || 1) : r.bzWeeklyIncome ? r.bzWeeklyIncome / 1e3 : r.hasBazaar ? 0 : null, render: r => {
+  { key: 'bzRev', label: 'Bazaar revenue', num: true, get: r => r.bzRev7d ?? null, render: r => revCell(r.bzRev7d, r.bzRevDays, r.bzRevLife, 'bazaar') },
+  { key: 'imRev', label: 'Item market revenue', num: true, get: r => r.imRev7d ?? null, render: r => revCell(r.imRev7d, r.imRevDays, r.imRevLife, 'item market') },
+  { key: 'bazaar', label: 'Bazaar stock', get: r => r.bzOpen ? (r.bzValue || 1) : r.bzWeeklyIncome ? r.bzWeeklyIncome / 1e3 : r.hasBazaar ? 0 : null, render: r => {
       if (r.checkedAt) {
         if (!r.bzItems) return '<span class="muted">Empty</span>';
         return `<div class="two-line"><span>${r.bzOpen ? 'Open' : 'Closed'}</span><small>${fmtMoney(r.bzValue)} listed</small></div>`;
@@ -1111,6 +1146,8 @@ function describeFilters() {
   if ($('fKnownOnly').checked) out.push({ text: 'Strength known', clear: uncheck('fKnownOnly') });
   if (v('fSoldWithin')) out.push({ text: $('fSoldWithin').selectedOptions[0].textContent.replace(/^In the /, 'Sold in the ').replace(/^Today$/, 'Sold today').replace(/^Today or yesterday$/, 'Sold today or yesterday'), clear: clear('fSoldWithin') });
   if (parseMoney(v('fSalesMin')) != null) out.push({ text: `Sales ${fmtMoney(parseMoney(v('fSalesMin')))}+ this week`, clear: clear('fSalesMin') });
+  if (parseMoney(v('fBzRevMin')) != null) out.push({ text: `Bazaar ${fmtMoney(parseMoney(v('fBzRevMin')))}+ this week`, clear: clear('fBzRevMin') });
+  if (parseMoney(v('fImRevMin')) != null) out.push({ text: `Item market ${fmtMoney(parseMoney(v('fImRevMin')))}+ this week`, clear: clear('fImRevMin') });
   if ($('fBazaarOpen').checked) out.push({ text: 'Bazaar open', clear: uncheck('fBazaarOpen') });
   const lo = v('fLvlMin'), hi = v('fLvlMax');
   if (lo || hi) out.push({ text: 'Level ' + (lo && hi ? `${lo}–${hi}` : lo ? `${lo}+` : `up to ${hi}`), clear: clear('fLvlMin', 'fLvlMax') });
@@ -1133,7 +1170,7 @@ $('summary').addEventListener('click', e => {
   summaryItems[+b.dataset.i]?.clear(); saveForm(); render();
 });
 function updateGroupCounts() {
-  const groups = { win: ['fFfMax', 'fBsMax', '#fKnownOnly'], cash: ['fSoldWithin', 'fSalesMin', '#fBazaarOpen'], target: ['fLvlMin', 'fLvlMax', 'fActive', '#fAttackable', '#fNoClothing', '#fNoFaction'] };
+  const groups = { win: ['fFfMax', 'fBsMax', '#fKnownOnly'], cash: ['fSoldWithin', 'fSalesMin', 'fBzRevMin', 'fImRevMin', '#fBazaarOpen'], target: ['fLvlMin', 'fLvlMax', 'fActive', '#fAttackable', '#fNoClothing', '#fNoFaction'] };
   for (const [g, ids] of Object.entries(groups)) {
     const n = ids.filter(id => id[0] === '#' ? $(id.slice(1)).checked : $(id).value.trim() !== '').length;
     const el = document.querySelector(`.group[data-group="${g}"] .count`);
@@ -1323,7 +1360,8 @@ async function checkOne(r) {
     const h = await api(`/user/${r.id}/personalstats`, { stat: MONEY_STATS.join(','), timestamp: then });
     if (!h.error) {
       const now = Object.fromEntries((d.personalstats || []).map(s => [s.name, s.value]));
-      slim.sales7d = (h.personalstats || []).reduce((sum, s) => sum + Math.max(0, (now[s.name] ?? s.value) - s.value), 0);
+      slim.rev7d = Object.fromEntries((h.personalstats || []).map(s => [s.name, Math.max(0, (now[s.name] ?? s.value) - s.value)]));
+      slim.sales7d = Object.values(slim.rev7d).reduce((a, b) => a + b, 0);
       applyCheck(r, slim, Date.now());
     }
   }
@@ -1469,7 +1507,7 @@ function beep() {
 $('watchBtn').addEventListener('click', () => watching ? stopWatching() : startWatching());
 
 // ---------- form persistence ----------
-const FORM_FIELDS = ['rpm', 'source', 'activity', 'factionId', 'startPos', 'count', 'levelSpread', 'fView', 'fFfMax', 'fBsMax', 'fSoldWithin', 'fSalesMin', 'fLvlMin', 'fLvlMax', 'fActive', 'checkCap', 'checkTtl', 'myStats'];
+const FORM_FIELDS = ['rpm', 'source', 'activity', 'factionId', 'startPos', 'count', 'levelSpread', 'fView', 'fFfMax', 'fBsMax', 'fSoldWithin', 'fSalesMin', 'fBzRevMin', 'fImRevMin', 'fLvlMin', 'fLvlMax', 'fActive', 'checkCap', 'checkTtl', 'myStats'];
 const FORM_CHECKS = ['autoCheck', 'fKnownOnly', 'fBazaarOpen', 'fAttackable', 'fNoClothing', 'fNoFaction', 'ffsAuto', 'watchSound', 'watchNotify'];
 function getForm() { const o = {}; FORM_FIELDS.forEach(id => o[id] = $(id).value); FORM_CHECKS.forEach(id => o[id] = $(id).checked); return o; }
 function setForm(o) {
@@ -1480,7 +1518,7 @@ function setForm(o) {
 function saveForm() { store.set('tmf_form', getForm()); }
 function loadForm() { const o = store.get('tmf_form', null); if (o) setForm(o); }
 function resetFilters() {
-  ['fFfMax', 'fBsMax', 'fSoldWithin', 'fSalesMin', 'fLvlMin', 'fLvlMax', 'fActive'].forEach(id => $(id).value = '');
+  ['fFfMax', 'fBsMax', 'fSoldWithin', 'fSalesMin', 'fBzRevMin', 'fImRevMin', 'fLvlMin', 'fLvlMax', 'fActive'].forEach(id => $(id).value = '');
   ['fKnownOnly', 'fBazaarOpen', 'fNoFaction'].forEach(id => $(id).checked = false);
   saveForm(); render(); toast('Filters cleared');
 }
@@ -1489,6 +1527,8 @@ const QUICK = [
   { label: 'Sold today', apply: () => { $('fSoldWithin').value = '0'; } },
   { label: 'Sold this week', apply: () => { $('fSoldWithin').value = '7'; } },
   { label: 'Bazaar open', apply: () => { $('fBazaarOpen').checked = true; } },
+  { label: 'Bazaar seller', apply: () => { $('fBzRevMin').value = '1m'; } },
+  { label: 'Item market seller', apply: () => { $('fImRevMin').value = '1m'; } },
   { label: 'Easy fights', apply: () => { $('fFfMax').value = '2'; } },
   { label: 'Idle or offline', apply: () => { $('fActive').value = 'notOnline'; } },
   { label: 'No faction', apply: () => { $('fNoFaction').checked = true; } },

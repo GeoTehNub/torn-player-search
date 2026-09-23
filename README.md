@@ -14,8 +14,8 @@ A mug takes a cut (about 5–10%) of the cash a player is **carrying**, so no pu
    - everyone in your level range (Level Hall of Fame)
    - the richest players (Net worth Hall of Fame)
    - a faction's members (about 100 per call)
-2. **Check them.** One call per player covers status, job, bazaar and dated trading stats. Players who sold in the last week get one extra call for their weekly sales amount.
-3. **Mug score (0–100).** It combines how recent their last sale was, how much they sold this week, whether their bazaar is open, whether they're idle, 7★ Clothing Store mug protection (−75%), and your chance of winning (FFScouter Fair Fight, or a rank-based stat estimate).
+2. **Check them.** One call per player covers status, job, bazaar and dated trading stats (bazaar, item market, points, auctions, trades). Players who sold in the last week get one extra call for their weekly sales amount.
+3. **Mug score (0–100).** It combines how recent their last sale was, this week's bazaar and item market revenue, whether their bazaar is open, whether they're idle, 7★ Clothing Store mug protection (−75%), and your chance of winning (FFScouter Fair Fight, or a rank-based stat estimate).
 4. **Watch the best.** Star players and press *Start watching*. They're re-checked about every 30 s while the page is open. You're alerted (sound and optional desktop notification) when their bazaar stock drops or they become attackable. Alerts only link to the attack page; you always click it yourself.
 
 ## Torn API ToS
