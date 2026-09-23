@@ -236,6 +236,26 @@
     <div class="hint">Looks up only players that pass the free filters and have no fresh cached data. While detailed filters are set, players that haven't been looked up yet are hidden. In <i>Watchlist only</i> view this refreshes your watchlist.</div>
   </div>
 
+  <!-- Stat estimates -->
+  <div class="panel">
+    <h2>3 · Battle stat estimates</h2>
+    <div class="hint" style="margin-top:0"><b>Rank estimate (free):</b> works out a stat bracket from rank, level, crimes and networth, the same method TornTools uses. It fills in automatically for looked-up players (and for free when scanning the Level HoF with networth known).</div>
+    <label>Estimated total stats (accepts 500k, 2.5m, 1b)</label>
+    <div class="row"><input type="text" id="fBsMin" placeholder="min"><span class="dash">–</span><input type="text" id="fBsMax" placeholder="max"></div>
+    <label>Fair Fight (FFScouter only)</label>
+    <div class="row"><input type="number" id="fFfMin" step="any" placeholder="min"><span class="dash">–</span><input type="number" id="fFfMax" step="any" placeholder="max"></div>
+    <label>FFScouter key <span class="muted">(a Torn API key registered at ffscouter.com)</span></label>
+    <div class="row">
+      <input type="password" id="ffsKey" placeholder="optional" autocomplete="off">
+      <button id="ffsUseTorn" class="fixed small" title="Copy your Torn key into this field">Use Torn key</button>
+    </div>
+    <label><input type="checkbox" id="ffsAuto"> Fetch FFScouter estimates automatically after each scan</label>
+    <div class="btns">
+      <button class="primary" id="ffsBtn">Get FFScouter estimates</button>
+    </div>
+    <div class="hint">Optional and more accurate (built from real attack/spy data, plus Fair Fight vs. you). Sends your key and the IDs of players passing the free filters to ffscouter.com, 205 per request, without using your Torn API budget. First <a href="https://ffscouter.com/" target="_blank" rel="noopener">sign up at FFScouter and read their Data Policy &amp; Terms</a>.</div>
+  </div>
+
   <!-- Watchlist -->
   <div class="panel">
     <h2>Watchlist <span class="sub" id="watchCount">0 players</span></h2>
@@ -257,6 +277,7 @@
         <li><b>Purpose of use:</b> Personal player search over public Hall of Fame / profile data.</li>
         <li><b>Key storage &amp; sharing:</b> Kept locally only; never shared. Untick "Remember" to keep it in memory for this tab only.</li>
         <li><b>Key access level:</b> <b>Public</b> is enough. All endpoints used (torn/hof, user/{id} profile, job, personalstats, faction/{id}/basic) are public.</li>
+        <li><b>FFScouter (optional):</b> Only if you enter an FFScouter key and request estimates, that key and the relevant player IDs are sent to ffscouter.com under <a href="https://ffscouter.com/" target="_blank" rel="noopener">their Data Policy &amp; Terms</a>. Nothing else is shared.</li>
         <li><b>Rate limits:</b> Throttled to your chosen budget (default 80/min, hard cap 100/min = Torn's per-user limit). It stops immediately on invalid-key or ban errors and backs off on "too many requests".</li>
       </ul>
     </details>
@@ -296,6 +317,26 @@ const COMPANY_TYPES = {1:'Hair Salon',2:'Law Firm',3:'Flower Shop',4:'Car Dealer
 const CITY_JOBS = ['Army','Casino','Education','Grocer','Law','Medical'];
 const STATUSES = ['Okay','Hospital','Jail','Traveling','Abroad','Federal','Fallen'];
 const DEFAULT_RPM = 80;
+const FFS_API = 'https://ffscouter.com/api/v1';
+const FFS_BATCH = 205;          // FFScouter get-stats max targets per request
+
+// Rank-based estimate (same method as TornTools): rank = 1 + triggers from level, crimes, networth and battle stats.
+// Whatever rank isn't explained by level/crimes/networth tells us how many battle-stat triggers were hit.
+const RANK_NAMES = ['Absolute beginner','Beginner','Inexperienced','Rookie','Novice','Below average','Average','Reasonable','Above average','Competent','Highly competent','Veteran','Distinguished','Highly distinguished','Professional','Star','Master','Outstanding','Celebrity','Supreme','Idolized','Champion','Heroic','Legendary','Elite','Invincible'];
+const RANK_TRIGGERS = {
+  level: [2, 6, 11, 26, 31, 50, 71, 100],
+  crimes: [100, 5000, 10000, 20000, 30000, 50000],
+  networth: [5e6, 5e7, 5e8, 5e9, 5e10],
+};
+const STAT_BRACKETS = [
+  { label: 'under 2k', min: 0, max: 2e3 },
+  { label: '2k – 25k', min: 2e3, max: 2.5e4 },
+  { label: '20k – 250k', min: 2e4, max: 2.5e5 },
+  { label: '200k – 2.5m', min: 2e5, max: 2.5e6 },
+  { label: '2m – 25m', min: 2e6, max: 2.5e7 },
+  { label: '20m – 250m', min: 2e7, max: 2.5e8 },
+  { label: 'over 200m', min: 2e8, max: Infinity },
+];
 
 // ---------- storage: localStorage for small settings, IndexedDB for bulk data ----------
 const store = {
@@ -334,6 +375,8 @@ let apiKey = store.get('tps_key', '') || '';
 let running = false, stopFlag = false;
 const rows = new Map();                        // id -> row
 let profileCache = {};                         // id -> {t, d}   (IndexedDB)
+let ffCache = {};                              // id -> {t, ff, bs, human, src, upd}   (IndexedDB)
+let ffsKey = store.get('tps_ffs_key', '') || '';
 let watch = store.get('tps_watch', {});        // id -> {name, note, t}
 let hidden = store.get('tps_hidden', {});      // id -> name
 let factions = store.get('tps_factions', {});  // id -> {name, tag, t}
@@ -492,6 +535,8 @@ function upsertHof(h, cat) {
   r.age = h.age_in_days;
   r.signed_up = h.signed_up;
   r.rank = h.rank_name;
+  if (h.rank_number) r.rankNum = h.rank_number;
+  if (h.criminal_offenses != null) r.crimes = h.criminal_offenses;   // only the Level HoF includes this
   r.hof[cat] = { value: h.value, pos: h.position };
   if (cat === 'networth') r.networth = h.value;
   return r;
@@ -511,6 +556,8 @@ function applyEnriched(r, d) {
   r.donator = p.donator_status || null;
   r.property = p.property ? p.property.name : '';
   r.rank = p.rank || r.rank;
+  const rn = RANK_NAMES.indexOf(p.rank);
+  if (rn >= 0) r.rankNum = rn + 1;
   const j = d.job;
   r.companyId = null;
   if (!j) { r.jobKey = 'none'; r.jobLabel = 'Unemployed'; r.position = ''; r.stars = null; r.company = ''; }
@@ -530,12 +577,42 @@ function applyEnriched(r, d) {
   }
   const nw = (d.personalstats || []).find(s => s.name === 'networth');
   if (nw && !r.hof.networth) r.networth = nw.value;   // HoF networth is fresher when we have it
+  const cr = (d.personalstats || []).find(s => s.name === 'criminaloffenses');
+  if (cr) r.crimes = cr.value;
   if (watch[r.id] && r.name) watch[r.id].name = r.name;
 }
 
 function applyCached(r) {
   const c = profileCache[r.id];
   if (c && c.d) applyEnriched(r, c.d);
+  if (ffCache[r.id]) r.ffs = ffCache[r.id];
+}
+
+// Index into STAT_BRACKETS, or null when we can't tell.
+function rankEstimate(r) {
+  if (!r.rankNum || r.level == null || r.crimes == null || r.networth == null) return null;
+  if (r.last_action && new Date(r.last_action * 1000).getUTCFullYear() <= 2015) return null;  // pre-2016 rank system
+  const t = RANK_TRIGGERS.level.filter(x => x <= r.level).length
+          + RANK_TRIGGERS.crimes.filter(x => x <= r.crimes).length
+          + RANK_TRIGGERS.networth.filter(x => x <= r.networth).length;
+  const i = r.rankNum - t - 1;
+  return i >= 0 && i < STAT_BRACKETS.length ? i : null;
+}
+
+// Best available estimate: FFScouter point value if we have it, else the rank bracket.
+function statRange(r) {
+  if (r.ffs && r.ffs.bs != null) return { min: r.ffs.bs, max: r.ffs.bs, sort: r.ffs.bs, src: 'ffs' };
+  const i = rankEstimate(r);
+  if (i == null) return null;
+  const b = STAT_BRACKETS[i];
+  return { min: b.min, max: b.max, sort: b.min + 1, src: 'rank', label: b.label };
+}
+function fmtStat(n) {
+  if (n >= 1e12) return (n / 1e12).toFixed(2) + 't';
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'b';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'm';
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'k';
+  return String(n);
 }
 
 function cacheFresh(id) {
@@ -621,11 +698,26 @@ function detailFilter() {
     stars: numOrNull('fStars'), statuses: new Set([...document.querySelectorAll('#fStatus input:checked')].map(i => i.value)),
     donator: $('fDonator').value, prop: $('fProp').value.trim().toLowerCase(),
     nwSet: parseMoney($('fNwMin').value) != null || parseMoney($('fNwMax').value) != null,
+    bsMin: parseMoney($('fBsMin').value), bsMax: parseMoney($('fBsMax').value),
+    ffMin: numOrNull('fFfMin'), ffMax: numOrNull('fFfMax'),
   };
   const active = f.jobs.size || f.pos || f.stars != null || f.statuses.size || f.donator || f.prop;
+  const statsSet = f.bsMin != null || f.bsMax != null;
+  const ffSet = f.ffMin != null || f.ffMax != null;
   const fn = r => {
-    if (!active && !f.nwSet) return true;
     if (f.nwSet && r.networth == null) return false;     // networth filter needs a known value
+    if (statsSet) {                                      // keep players whose estimate overlaps the range
+      const s = statRange(r);
+      if (!s) return false;
+      if (f.bsMin != null && s.max < f.bsMin) return false;
+      if (f.bsMax != null && s.min > f.bsMax) return false;
+    }
+    if (ffSet) {
+      const ff = r.ffs ? r.ffs.ff : null;
+      if (ff == null) return false;
+      if (f.ffMin != null && ff < f.ffMin) return false;
+      if (f.ffMax != null && ff > f.ffMax) return false;
+    }
     if (!active) return true;
     if (!r.enriched) return false;
     if (f.jobs.size && !f.jobs.has(r.jobKey)) return false;
@@ -637,8 +729,8 @@ function detailFilter() {
     if (f.prop && !String(r.property || '').toLowerCase().includes(f.prop)) return false;
     return true;
   };
-  fn.needsLookup = r => (active || (f.nwSet && r.networth == null)) && !cacheFresh(r.id);
-  fn.active = active || f.nwSet;
+  fn.needsLookup = r => (active || (f.nwSet && r.networth == null) || (statsSet && !statRange(r))) && !cacheFresh(r.id);
+  fn.active = active || f.nwSet || statsSet || ffSet;
   return fn;
 }
 
@@ -651,6 +743,13 @@ const COLS = [
       `<button class="ico" data-act="hide" title="${hidden[r.id] ? 'Un-hide' : 'Hide from results'}">${hidden[r.id] ? '↺' : '⊘'}</button>` },
   { key: 'name', label: 'Player', fixed: true, render: r => `<a href="${profileUrl(r.id)}" target="_blank" rel="noopener">${esc(r.name)}</a> <span class="muted">[${r.id}]</span>` },
   { key: 'level', label: 'Lvl', num: true },
+  { key: 'bs', label: 'Est. stats', num: true, get: r => statRange(r)?.sort ?? null, render: r => {
+      const s = statRange(r);
+      if (!s) return '';
+      if (s.src === 'ffs') return `<span title="FFScouter estimate (${esc(r.ffs.src || 'estimate')})${r.ffs.upd ? ', updated ' + esc(fmtDate(r.ffs.upd)) : ''}">${esc(r.ffs.human || fmtStat(r.ffs.bs))}</span>`;
+      return `<span class="muted" title="Rank-based bracket (TornTools method). Rough; can be off for a week after a networth change.">~${esc(s.label)}</span>`;
+    } },
+  { key: 'ff', label: 'FF', num: true, get: r => r.ffs?.ff ?? null, render: r => r.ffs?.ff != null ? `<span title="FFScouter Fair Fight vs. you">${r.ffs.ff.toFixed(2)}</span>` : '' },
   { key: 'networth', label: 'Networth', num: true, render: r => r.networth == null ? '<span class="muted">?</span>' : fmtMoney(r.networth) },
   { key: 'hofval', label: 'HoF value', num: true, get: r => r.hof[lastCat] ? r.hof[lastCat].value : null, render: r => r.hof[lastCat] ? Number(r.hof[lastCat].value).toLocaleString() : '' },
   { key: 'hofpos', label: 'HoF #', num: true, get: r => r.hof[lastCat] ? r.hof[lastCat].pos : null, render: r => r.hof[lastCat] ? r.hof[lastCat].pos.toLocaleString() : '' },
@@ -762,10 +861,10 @@ $('colMenu').addEventListener('change', e => {
 document.addEventListener('click', e => { const d = document.querySelector('details.cols'); if (d.open && !d.contains(e.target)) d.open = false; });
 
 // ---------- running tasks ----------
-const TASK_BTNS = ['scanBtn', 'continueBtn', 'enrichBtn', 'myLevelBtn', 'factionBtn'];
-async function runTask(name, fn) {
+const TASK_BTNS = ['scanBtn', 'continueBtn', 'enrichBtn', 'myLevelBtn', 'factionBtn', 'ffsBtn'];
+async function runTask(name, fn, needsTornKey = true) {
   if (running) return;
-  if (!apiKey) { log('Enter and save an API key first.', 'err'); $('apiKey').focus(); return; }
+  if (needsTornKey && !apiKey) { log('Enter and save an API key first.', 'err'); $('apiKey').focus(); return; }
   running = true; stopFlag = false;
   $('stopBtn').disabled = false;
   TASK_BTNS.forEach(id => $(id).disabled = true);
@@ -781,7 +880,7 @@ async function runTask(name, fn) {
     TASK_BTNS.forEach(id => $(id).disabled = false);
     setStatus('Idle');
     render();
-    saveCache(); saveRows(); saveWatch();
+    saveCache(); saveRows(); saveWatch(); idb.set('ffcache', ffCache);
   }
 }
 
@@ -852,7 +951,7 @@ async function enrich() {
   let done = 0;
   for (const r of todo) {
     setStatus(`Looking up <b>${done + 1}/${todo.length}</b>: ${esc(r.name)}`);
-    const data = await api(`/user/${r.id}`, { selections: 'profile,job,personalstats', stat: 'networth' });
+    const data = await api(`/user/${r.id}`, { selections: 'profile,job,personalstats', stat: 'networth,criminaloffenses' });
     if (data.error) log(`Skipped ${r.name} [${r.id}]: ${data.error.error}`, 'warn');
     else {
       const slim = { profile: data.profile, job: data.job, personalstats: data.personalstats };
@@ -893,17 +992,69 @@ async function useMyLevel() {
   log(`Your level is ${lvl}; level filter set to ${lvl - s}–${lvl + s}.`);
 }
 
+// FFScouter: batch up to 205 players per request. Its limits are separate from Torn's; we still space calls out politely.
+async function fetchFfs() {
+  if (!ffsKey) throw new FatalApiError('Enter your FFScouter key first (sign up at ffscouter.com).');
+  const b = baseFilter();
+  const fresh = id => ffCache[id] && Date.now() - ffCache[id].t < 12 * 3600e3;
+  const ids = [...rows.values()].filter(r => b(r) && !fresh(r.id)).map(r => r.id).slice(0, FFS_BATCH * 30);
+  if (!ids.length) { log('FFScouter: everything shown already has a fresh estimate.'); return; }
+  const batches = Math.ceil(ids.length / FFS_BATCH);
+  log(`FFScouter: fetching ${ids.length} players in ${batches} request(s)…`);
+  for (let i = 0, n = 0; i < ids.length; ) {
+    if (stopFlag) throw new StopError();
+    const batch = ids.slice(i, i + FFS_BATCH);
+    setStatus(`FFScouter request <b>${n + 1}/${batches}</b>`);
+    let data;
+    try {
+      const res = await fetch(`${FFS_API}/get-stats?${new URLSearchParams({ key: ffsKey, targets: batch.join(',') })}`);
+      data = await res.json();
+    } catch (e) { throw new Error(`FFScouter network error: ${e.message}`); }
+    if (!Array.isArray(data)) {
+      const code = data && data.code;
+      if (code === 20 || code === 21) {                 // rate limited: wait what they ask, then retry this batch
+        const wait = Math.min(120, +data.retry_after_seconds || 30);
+        log(`FFScouter rate limit, waiting ${wait}s…`, 'warn');
+        for (let s = 0; s < wait * 2; s++) { if (stopFlag) throw new StopError(); await sleep(500); }
+        continue;
+      }
+      if ([1, 2, 6].includes(code)) throw new FatalApiError(`FFScouter: ${data.error || 'invalid key'}. Register this key at ffscouter.com first.`);
+      throw new Error(`FFScouter error${code ? ` (code ${code})` : ''}: ${data && data.error || 'unexpected response'}`);
+    }
+    const now = Date.now();
+    const got = new Set();
+    for (const e of data) {
+      got.add(e.player_id);
+      ffCache[e.player_id] = { t: now, ff: e.fair_fight ?? null, bs: e.bs_estimate ?? null, human: e.bs_estimate_human || null, src: e.source || null, upd: e.last_updated || null };
+    }
+    for (const id of batch) {
+      if (!got.has(id)) ffCache[id] = { t: now, ff: null, bs: null };   // unknown to FFScouter; don't re-ask for 12h
+      const r = rows.get(id); if (r) r.ffs = ffCache[id];
+    }
+    i += FFS_BATCH; n++;
+    setProgress(n / batches);
+    scheduleRender();
+    if (i < ids.length) await sleep(1000);
+  }
+  const known = ids.filter(id => ffCache[id] && ffCache[id].bs != null).length;
+  log(`FFScouter: estimates for ${known}/${ids.length} players.`);
+}
+
 function withAutoLookup(scanFn) {
-  return async () => { await scanFn(); if ($('autoLookup').checked) await enrich(); };
+  return async () => {
+    await scanFn();
+    if ($('autoLookup').checked) await enrich();
+    if ($('ffsAuto').checked && ffsKey) await fetchFfs();
+  };
 }
 
 // ---------- CSV / clipboard ----------
 function exportCsv() {
   const vis = visibleRows();
-  const head = ['id', 'name', 'level', 'networth', `hof_${lastCat}`, 'hof_pos', 'last_action_utc', 'age_days', 'job', 'position', 'stars', 'company', 'faction_id', 'faction_name', 'status', 'donator', 'property', 'watched', 'note'];
+  const head = ['id', 'name', 'level', 'est_stats', 'est_stats_source', 'fair_fight', 'networth', `hof_${lastCat}`, 'hof_pos', 'last_action_utc', 'age_days', 'job', 'position', 'stars', 'company', 'faction_id', 'faction_name', 'status', 'donator', 'property', 'watched', 'note'];
   const q = v => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
   const lines = [head.join(',')].concat(vis.map(r => [
-    r.id, r.name, r.level, r.networth, r.hof[lastCat]?.value, r.hof[lastCat]?.pos,
+    r.id, r.name, r.level, (s => s ? (s.src === 'ffs' ? r.ffs.bs : s.label) : '')(statRange(r)), statRange(r)?.src, r.ffs?.ff, r.networth, r.hof[lastCat]?.value, r.hof[lastCat]?.pos,
     r.last_action ? new Date(r.last_action * 1000).toISOString() : '', r.age,
     r.jobLabel, r.position, r.stars, r.company, r.faction_id, factions[r.faction_id]?.name, r.status, r.donator, r.property,
     watch[r.id] ? 'yes' : '', watch[r.id]?.note
@@ -925,13 +1076,14 @@ async function copyIds() {
 }
 
 // ---------- form persistence + presets ----------
-const FORM_FIELDS = ['rpm','mode','cat','startPos','maxPages','levelSpread','fView','fLvlMin','fLvlMax','fLaMin','fLaMax','fLaUnit','fAgeMin','fAgeMax','fFaction','fFactionId','fName','fNwMin','fNwMax','fPos','fStars','fDonator','fProp','enrichCap','cacheHours'];
-const FILTER_FIELDS = ['fLvlMin','fLvlMax','fLaMin','fLaMax','fAgeMin','fAgeMax','fFaction','fFactionId','fName','fNwMin','fNwMax','fPos','fStars','fDonator','fProp'];
+const FORM_FIELDS = ['rpm','mode','cat','startPos','maxPages','levelSpread','fView','fLvlMin','fLvlMax','fLaMin','fLaMax','fLaUnit','fAgeMin','fAgeMax','fFaction','fFactionId','fName','fNwMin','fNwMax','fPos','fStars','fDonator','fProp','fBsMin','fBsMax','fFfMin','fFfMax','enrichCap','cacheHours'];
+const FILTER_FIELDS = ['fLvlMin','fLvlMax','fLaMin','fLaMax','fAgeMin','fAgeMax','fFaction','fFactionId','fName','fNwMin','fNwMax','fPos','fStars','fDonator','fProp','fBsMin','fBsMax','fFfMin','fFfMax'];
 function getForm() {
   const o = {}; FORM_FIELDS.forEach(id => o[id] = $(id).value);
   o.fJob = [...$('fJob').selectedOptions].map(x => x.value);
   o.fStatus = [...document.querySelectorAll('#fStatus input:checked')].map(i => i.value);
   o.autoLookup = $('autoLookup').checked;
+  o.ffsAuto = $('ffsAuto').checked;
   return o;
 }
 function setForm(o, fields = FORM_FIELDS) {
@@ -939,6 +1091,7 @@ function setForm(o, fields = FORM_FIELDS) {
   if (o.fJob) [...$('fJob').options].forEach(op => op.selected = o.fJob.includes(op.value));
   if (o.fStatus) document.querySelectorAll('#fStatus input').forEach(i => i.checked = o.fStatus.includes(i.value));
   if (o.autoLookup != null) $('autoLookup').checked = o.autoLookup;
+  if (o.ffsAuto != null) $('ffsAuto').checked = o.ffsAuto;
   syncMode();
 }
 function saveForm() { store.set('tps_form', getForm()); }
@@ -1048,7 +1201,20 @@ document.querySelector('aside').addEventListener('change', () => { saveForm(); s
 $('mode').addEventListener('change', syncMode);
 $('saveKey').addEventListener('click', saveKey);
 $('apiKey').addEventListener('keydown', e => { if (e.key === 'Enter') saveKey(); });
-$('rememberKey').addEventListener('change', () => { if (!$('rememberKey').checked) store.del('tps_key'); else if (apiKey) store.set('tps_key', apiKey); });
+$('rememberKey').addEventListener('change', () => {
+  if (!$('rememberKey').checked) { store.del('tps_key'); store.del('tps_ffs_key'); }
+  else { if (apiKey) store.set('tps_key', apiKey); if (ffsKey) store.set('tps_ffs_key', ffsKey); }
+});
+function setFfsKey(k) {
+  ffsKey = k.trim();
+  if (ffsKey && $('rememberKey').checked) store.set('tps_ffs_key', ffsKey); else store.del('tps_ffs_key');
+}
+$('ffsKey').addEventListener('change', () => setFfsKey($('ffsKey').value));
+$('ffsUseTorn').addEventListener('click', () => {
+  if (!apiKey) { log('Save your Torn key first.', 'err'); return; }
+  $('ffsKey').value = apiKey; setFfsKey(apiKey); toast('FFScouter key set');
+});
+$('ffsBtn').addEventListener('click', () => runTask('FFScouter', fetchFfs, false));
 $('rpm').addEventListener('change', () => { $('rpm').value = budget(); });
 $('scanBtn').addEventListener('click', () => runTask('Scan', scanFn()));
 $('continueBtn').addEventListener('click', () => { if (cursor) runTask('Continue', withAutoLookup(scanPages)); });
@@ -1083,6 +1249,7 @@ document.addEventListener('keydown', e => {
   buildPresetSel();
   loadForm();
   saveWatch();
+  if (ffsKey) $('ffsKey').value = ffsKey;
   if (apiKey) { $('apiKey').value = apiKey; $('keyInfo').className = 'keyinfo ok'; $('keyInfo').textContent = 'Key loaded from this browser.'; }
 
   // one-time migration from the old localStorage cache
@@ -1090,6 +1257,7 @@ document.addEventListener('keydown', e => {
   profileCache = (await idb.get('cache')) || legacy || {};
   if (legacy) { store.del('tps_cache'); saveCache(); }
 
+  ffCache = (await idb.get('ffcache')) || {};
   const saved = await idb.get('rows');
   if (Array.isArray(saved)) saved.forEach(r => { if (r && r.id) rows.set(r.id, r); });
   const meta = await idb.get('meta');
