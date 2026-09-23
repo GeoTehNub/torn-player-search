@@ -21,9 +21,9 @@ An advanced player search for [Torn City](https://www.torn.com), built on the of
 | | |
 |---|---|
 | **Data storage** | Only in your own browser (localStorage + IndexedDB). There is no server. |
-| **Data sharing** | None. The page only talks to `api.torn.com`. |
+| **Data sharing** | None. The page only talks to `api.torn.com` (and `ffscouter.com` if you opt in). |
 | **Purpose of use** | Personal player search over public Hall of Fame / profile data. |
-| **Key storage & sharing** | Stored locally in your browser only if you tick "Remember". Never sent anywhere except Torn's API. |
+| **Key storage & sharing** | Stored locally in your browser only if you tick "Remember". Sent only to Torn's API (and FFScouter, if you use it). |
 | **Key access level** | **Public** is enough. Please use a Public key. |
 | **FFScouter (optional)** | Only if you enter an FFScouter key: that key and the relevant player IDs are sent to ffscouter.com under their Data Policy & Terms. |
 
