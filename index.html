@@ -17,6 +17,7 @@
   header h1 span { color: var(--accent); }
   header .spacer { flex: 1; }
   main { display: grid; grid-template-columns: 330px 1fr; gap: 12px; padding: 12px 16px; }
+  main > * { min-width: 0; }
   @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
   .panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--accent); margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
