@@ -27,9 +27,14 @@ A mug takes a cut (about 5–10%) of the cash a player is **carrying**, so no pu
 | **Data sharing** | None. The page talks to `api.torn.com` (and `ffscouter.com` if you use Fair Fight). |
 | **Purpose of use** | Personal gain: finding mugging targets from public data. |
 | **Key storage & sharing** | Stored locally in your browser only if you tick "Remember". Sent only to Torn's API (and FFScouter, if you use it). |
+| **Shared keys** | Players can donate a **Public Only** key (Settings → Donate a key). Donated keys are listed in `keys.js`, which anyone can read, and are used only by visitors who haven't added their own key (max 50 calls/min per visitor). Donors can stop anytime by deleting the key in Torn. |
 | **Key access level** | **Public** is enough. Please use a Public key. |
 
 Rate limiting: the tool never makes more than your chosen budget of calls in any 60-second window (default 80/min, hard cap 100/min, Torn's per-user limit). Watching uses at most half of that budget. It never fetches torn.com pages, never opens the attack page and never attacks on its own.
+
+## Shared keys
+
+`keys.js` is generated from a private key pool with `rotate.mjs` (`add`, `remove`, `list`, `publish`). `publish` re-checks every key with Torn, drops any that are dead or not Public Only, rewrites `keys.js`, and commits and pushes. The page rotates through the keys, skips ones Torn rejects, and rests a key for a minute when it hits the rate limit.
 
 ## Running locally
 

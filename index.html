@@ -501,12 +501,23 @@
     <section class="dlg-section">
       <h3>Torn API key</h3>
       <p>A <b>Public</b> key is all this tool needs. Create one under Torn → Preferences → API Keys.</p>
+      <p id="sharedNote" class="muted" hidden>No key yet? The tool uses shared Public keys donated by other players until you add yours. They're split between everyone, so your own key is faster (up to 100 calls/min instead of 50) and needed for <b>Use my level</b>.</p>
       <div class="inline">
         <input type="password" id="apiKey" placeholder="16-character key" autocomplete="off" aria-label="Torn API key" spellcheck="false">
         <button class="btn primary" id="saveKey" type="button">Save key</button>
       </div>
       <div id="keyInfo" class="keystate" role="status"></div>
       <label class="check"><input type="checkbox" id="rememberKey" checked> Remember my keys in this browser</label>
+    </section>
+
+    <section class="dlg-section">
+      <h3>Donate a key</h3>
+      <p>Help players who don't have a key yet by donating a <b>Public Only</b> key. Make a new one just for this under Torn → Preferences → API Keys, so you can delete it anytime to stop donating. Calls made with it count toward your 100/min limit, and it will be visible to anyone who uses the site. Only Public keys are accepted: they can read only what's already on player profiles.</p>
+      <div class="inline">
+        <input type="password" id="donateKey" placeholder="16-character Public key" autocomplete="off" aria-label="Key to donate" spellcheck="false">
+        <button class="btn" id="donateBtn" type="button">Check &amp; donate</button>
+      </div>
+      <div id="donateInfo" class="keystate" role="status"></div>
     </section>
 
     <section class="dlg-section">
@@ -580,6 +591,7 @@
 
 <div id="toast" role="status" aria-live="polite"></div>
 
+<script src="keys.js"></script>
 <script>
 'use strict';
 const API = 'https://api.torn.com/v2';
@@ -589,6 +601,8 @@ const icon = name => `<svg class="i" aria-hidden="true"><use href="#i-${name}"/>
 
 // ---------- constants ----------
 const DEFAULT_RPM = 80;
+const SHARED_RPM = 50;
+const DONATE_TO = 4218543;                // key donations are sent by Torn message to this player (the site owner)                    // per-browser cap on shared keys, so one visitor can't use up everyone's limit
 const FFS_API = 'https://ffscouter.com/api/v1';
 const FFS_BATCH = 205;
 const CLOTHING_STORE = 5;                 // company type id; 7★ gives employees 75% mug protection
@@ -649,6 +663,24 @@ let sortKey = 'score', sortDir = -1;
 let cursor = null;                           // where "Find more" resumes
 let alerts = [];                             // newest first
 
+// Shared Public keys donated by players (keys.js, generated from the private key pool by rotate.mjs).
+// Used only when you haven't added your own key. Calls rotate through them; a key Torn rejects is dropped
+// for this session, and a key that hits the rate limit rests for a minute.
+const shared = {
+  keys: (Array.isArray(window.SHARED_KEYS) ? window.SHARED_KEYS : []).filter(k => /^[A-Za-z0-9]{16}$/.test(k)),
+  i: Math.floor(Math.random() * 1000), dead: new Set(), coolUntil: {}
+};
+const hasKey = () => !!apiKey || shared.keys.some(k => !shared.dead.has(k));
+function nextSharedKey() {
+  const alive = shared.keys.filter(k => !shared.dead.has(k));
+  if (!alive.length) return '';
+  const now = Date.now(), ready = alive.filter(k => (shared.coolUntil[k] || 0) <= now);
+  if (ready.length) return ready[shared.i++ % ready.length];
+  const k = alive.reduce((a, b) => shared.coolUntil[a] <= shared.coolUntil[b] ? a : b);
+  limiter.pauseUntil = Math.max(limiter.pauseUntil, shared.coolUntil[k]);   // every key is resting: wait for the first one
+  return k;
+}
+
 class StopError extends Error {}
 class FatalApiError extends Error {}
 
@@ -667,7 +699,8 @@ let toastTimer;
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2800); }
 
 // ---------- rate limiter: never more than `budget` calls in ANY 60s window ----------
-const budget = () => Math.max(5, Math.min(100, Math.floor(+$('rpm').value) || DEFAULT_RPM));
+const userBudget = () => Math.max(5, Math.min(100, Math.floor(+$('rpm').value) || DEFAULT_RPM));
+const budget = () => apiKey ? userBudget() : Math.min(userBudget(), SHARED_RPM);
 const limiter = {
   stamps: [], pauseUntil: 0,
   used() { const now = Date.now(); this.stamps = this.stamps.filter(t => now - t < 60000); return this.stamps.length; },
@@ -695,21 +728,24 @@ setInterval(() => {
 
 // ---------- Torn API ----------
 async function api(path, params = {}, bg = false) {
-  if (!apiKey) throw new FatalApiError('Add your Torn API key in Settings first.');
   for (let attempt = 0; attempt < 4; attempt++) {
+    const own = !!apiKey, key = apiKey || nextSharedKey();
+    if (!key) throw new FatalApiError(shared.keys.length ? 'The shared keys aren’t working right now. Add your own Torn API key in Settings.' : 'Add your Torn API key in Settings first.');
     await limiter.take(bg);
-    const q = new URLSearchParams({ ...params, key: apiKey, comment: COMMENT });
+    const q = new URLSearchParams({ ...params, key, comment: COMMENT });
     let data;
     try { data = await (await fetch(`${API}${path}?${q}`)).json(); }
     catch (e) { log(`Network error on ${path}: ${e.message}. Retrying…`, 'warn'); await sleep(2000 * (attempt + 1)); continue; }
     if (!data.error) return data;
     const { code, error } = data.error;
     if ([2, 10, 13, 18].includes(code)) {        // bad/paused/disabled key: stop, repeated invalid-key calls risk an IP ban
+      if (!own) { shared.dead.add(key); log(`A shared key stopped working (${error}). Switching to the next one.`, 'warn'); updateKeyBadge(); attempt--; continue; }
       forgetKey();
       throw new FatalApiError(`Torn rejected your API key (${error}). It has been removed; add a working key in Settings.`);
     }
     if ([8, 9, 14].includes(code)) throw new FatalApiError(`Torn's API is unavailable right now (${error}).`);
     if (code === 16) throw new FatalApiError(`Your key's access level is too low (${error}).`);
+    if (code === 5 && !own) { shared.coolUntil[key] = Date.now() + 61000; log('A shared key hit Torn’s rate limit (other people use it too). Switching keys; your own key avoids this.', 'warn'); continue; }
     if (code === 5) { limiter.pauseUntil = Date.now() + 61000; log('Torn says too many requests. Pausing 60s; other tools may be using your limit.', 'warn'); continue; }
     if (code === 17 || code === 0) { await sleep(3000); continue; }
     return data;                                // e.g. 6 incorrect ID: caller handles
@@ -725,8 +761,8 @@ function forgetKey() {
   updateKeyBadge();
 }
 function updateKeyBadge() {
-  $('keyBadge').classList.toggle('ok', !!apiKey);
-  $('keyBadgeText').textContent = apiKey ? `API key connected${keyType ? ' · ' + keyType : ''}` : 'Add API key';
+  $('keyBadge').classList.toggle('ok', hasKey());
+  $('keyBadgeText').textContent = apiKey ? `API key connected${keyType ? ' · ' + keyType : ''}` : hasKey() ? 'Using a shared key' : 'Add API key';
 }
 async function saveKey() {
   const k = $('apiKey').value.trim(), el = $('keyInfo');
@@ -745,6 +781,29 @@ async function saveKey() {
       : `Connected (${keyType}). You're ready to find targets.`;
   } catch (e) { el.className = 'keystate bad'; el.textContent = e.message; }
   updateKeyBadge(); render();
+}
+
+// Donations: check the key is Public Only, then open a Torn message to the owner with the key copied, ready to paste.
+async function donateKey() {
+  const k = $('donateKey').value.trim(), el = $('donateInfo');
+  if (!/^[A-Za-z0-9]{16}$/.test(k)) { el.className = 'keystate bad'; el.textContent = 'That doesn’t look like a key. Torn keys are 16 letters and numbers.'; return; }
+  if (shared.keys.includes(k)) { el.className = 'keystate ok'; el.textContent = 'This key is already being shared. Thank you!'; return; }
+  el.className = 'keystate'; el.textContent = 'Checking key…';
+  let d;
+  try { d = await (await fetch(`${API}/key/info?${new URLSearchParams({ key: k, comment: COMMENT })}`)).json(); }
+  catch (e) { el.className = 'keystate bad'; el.textContent = `Couldn’t reach Torn: ${e.message}`; return; }
+  if (d.error) { el.className = 'keystate bad'; el.textContent = `Torn rejected this key (${d.error.error}).`; return; }
+  const type = d.info?.access?.type || '';
+  if (!/public/i.test(type)) { el.className = 'keystate bad'; el.textContent = `This is a ${type || 'non-Public'} key. Only Public Only keys can be donated; make a new Public one for this.`; return; }
+  const msg = `Mug Finder key donation: ${k} (${type}). I agree to it being shared on the site until I delete it.`;
+  let copied = false;
+  try { await navigator.clipboard.writeText(msg); copied = true; } catch {}
+  window.open(`https://www.torn.com/messages.php#/p=compose&XID=${DONATE_TO}`, '_blank', 'noopener');
+  el.className = 'keystate ok';
+  el.textContent = copied
+    ? 'Key checked (Public Only). A Torn message is open: paste the copied text and send it. Thank you!'
+    : `Key checked (Public Only). A Torn message is open: send this text: ${msg}`;
+  $('donateKey').value = '';
 }
 
 // ---------- formatting ----------
@@ -1156,7 +1215,7 @@ function renderEmpty(shown, found) {
   e.hidden = shown !== 0;
   if (shown) return;
   const view = $('fView').value;
-  if (!apiKey) {
+  if (!hasKey()) {
     e.innerHTML = `<h3>Find players worth mugging</h3>
       <p>A mug takes a cut of the cash someone is carrying. This finds players who just made sales and haven't banked it, and shows whether you can beat them.</p>
       <button class="btn primary big" type="button" data-open-settings>Add your API key</button>
@@ -1187,7 +1246,7 @@ function updateActionButtons() {
   if (running) return;
   const lc = checkCandidates().length, cap = Math.max(1, +$('checkCap').value || 1), n = Math.min(lc, cap);
   $('checkLabel').textContent = n ? `Check ${plural(n, 'player')}` : 'Everyone checked';
-  $('checkBtn').disabled = !n || !apiKey;
+  $('checkBtn').disabled = !n || !hasKey();
   $('checkBtn').classList.toggle('primary', !!n);
   $('checkBtn').title = n ? `1–2 calls each, about ${Math.max(1, Math.ceil(n * 1.4 / budget()))} min${lc > cap ? `. ${lc.toLocaleString()} could be checked; raise the limit in Settings.` : ''}` : 'Every matching player was checked recently.';
   if (!ffsKey) { $('ffsLabel').textContent = 'Set up Fair Fight'; $('ffsBtn').disabled = false; $('ffsBtn').title = 'Add a key registered at FFScouter in Settings.'; }
@@ -1280,7 +1339,7 @@ function ensureWatchRows() {
 const TASK_BTNS = ['scanBtn', 'continueBtn', 'checkBtn', 'myLevelBtn', 'ffsBtn'];
 async function runTask(name, fn, needsTornKey = true) {
   if (running) return;
-  if (needsTornKey && !apiKey) { openSettings(); $('apiKey').focus(); toast('Add your Torn API key first'); return; }
+  if (needsTornKey && !hasKey()) { openSettings(); $('apiKey').focus(); toast('Add your Torn API key first'); return; }
   running = true; stopFlag = false;
   $('stopBtn').disabled = false;
   TASK_BTNS.forEach(id => $(id).disabled = true);
@@ -1497,6 +1556,7 @@ async function fetchFfs(force = false) {
 }
 
 async function useMyLevel() {
+  if (!apiKey) throw new FatalApiError('“Use my level” needs your own API key, since the shared keys belong to other players. Add it in Settings.');
   const d = await api('/user/profile');
   if (d.error) throw new Error(d.error.error);
   const lvl = d.profile.level, s = Math.max(0, +$('levelSpread').value || 0);
@@ -1548,7 +1608,7 @@ async function openFile(id) {
   try {
     let ps = fileCache[id] && Date.now() - fileCache[id].t < 30 * 60000 ? fileCache[id].ps : null;
     if (!ps) {
-      if (!apiKey) throw new FatalApiError('Add your Torn API key in Settings first.');
+      if (!hasKey()) throw new FatalApiError('Add your Torn API key in Settings first.');
       const d = await api(`/user/${id}/personalstats`, { cat: 'all' }, false);
       if (d.error) throw new Error(d.error.error);
       ps = d.personalstats; fileCache[id] = { t: Date.now(), ps };
@@ -1570,7 +1630,7 @@ let watching = false, watchLoop = null;
 const flashIds = new Set();
 const watchInterval = () => { const n = Object.keys(watch).length || 1; return Math.max(30, Math.ceil(n * 60 / (budget() * 0.5))); };   // uses at most half the budget
 function startWatching() {
-  if (!apiKey) { openSettings(); toast('Add your Torn API key first'); return; }
+  if (!hasKey()) { openSettings(); toast('Add your Torn API key first'); return; }
   if (!Object.keys(watch).length) { toast('Star some players to watch first'); return; }
   if ($('watchNotify').checked && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission();
   watching = true;
@@ -1699,7 +1759,7 @@ $('toggleFilters').addEventListener('click', () => { const open = document.body.
 
 const onFormChange = e => {
   if (!e.target.closest('#filters, .scanbar, #settings')) return;
-  if (['apiKey', 'ffsKey'].includes(e.target.id)) return;
+  if (['apiKey', 'ffsKey', 'donateKey'].includes(e.target.id)) return;
   if (e.target.id === 'source') { syncSource(); cursor = null; }
   if (e.target.id === 'watchNotify' && e.target.checked && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission();
   saveForm(); scheduleRender();
@@ -1707,6 +1767,8 @@ const onFormChange = e => {
 document.addEventListener('input', onFormChange);
 document.addEventListener('change', onFormChange);
 $('saveKey').addEventListener('click', saveKey);
+$('donateBtn').addEventListener('click', donateKey);
+$('donateKey').addEventListener('keydown', e => { if (e.key === 'Enter') donateKey(); });
 $('apiKey').addEventListener('keydown', e => { if (e.key === 'Enter') saveKey(); });
 $('rememberKey').addEventListener('change', () => {
   if (!$('rememberKey').checked) { store.del('tps_key'); store.del('tps_ffs_key'); store.del('tps_key_type'); }
@@ -1718,7 +1780,7 @@ $('ffsUseTorn').addEventListener('click', () => {
   if (!apiKey) { toast('Save your Torn key first'); $('apiKey').focus(); return; }
   $('ffsKey').value = apiKey; setFfsKey(apiKey); toast('FFScouter will use your Torn key');
 });
-$('rpm').addEventListener('change', () => { $('rpm').value = budget(); });
+$('rpm').addEventListener('change', () => { $('rpm').value = userBudget(); });
 $('scanBtn').addEventListener('click', () => runTask('Find players', findFn()));
 $('continueBtn').addEventListener('click', () => { const fn = continueFn(); if (fn) runTask('Find more', fn); });
 $('checkBtn').addEventListener('click', () => runTask('Check', checkPlayers));
@@ -1748,6 +1810,7 @@ document.addEventListener('keydown', e => {
   saveWatch(); saveHidden();
   if (ffsKey) $('ffsKey').value = ffsKey;
   if (apiKey) { $('apiKey').value = apiKey; $('keyInfo').className = 'keystate ok'; $('keyInfo').textContent = 'Key saved in this browser.'; }
+  $('sharedNote').hidden = !shared.keys.length;
   updateKeyBadge();
   render();
   checks = (await idb.get('checks')) || {};
