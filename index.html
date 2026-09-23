@@ -226,6 +226,10 @@
   .dlg-section h3 { margin: 0; font-size: 17px; font-weight: 600; }
   .dlg-section p { margin: 0; color: var(--muted); font-size: 14.5px; }
   .keystate { font-size: 14.5px; }
+  .stat-grid { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; font-size: 15px; }
+  .stat-grid dt { color: var(--muted); }
+  .stat-grid dd { margin: 0; text-align: right; font-family: var(--mono); font-size: 14.5px; }
+  .file-actions { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 16px; }
   .keystate.ok { color: var(--good); } .keystate.bad { color: var(--warn); }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -278,6 +282,7 @@
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></symbol>
   <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></symbol>
   <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12s3-7 9.5-7 9.5 7 9.5 7-3 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></symbol>
 </svg>
 
@@ -380,8 +385,17 @@
     </details>
 
     <details class="group" open data-group="cash">
-      <summary>Cash signals <span class="count" hidden></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+      <summary>Money <span class="count" hidden></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
       <div class="group-body">
+        <div>
+          <label class="field" for="fNwMin">Net worth, at least</label>
+          <input type="text" id="fNwMin" placeholder="Any, e.g. 1b" autocomplete="off">
+        </div>
+        <div>
+          <label class="field" for="fIncomeMin">Lifetime bazaar + item market income, at least</label>
+          <input type="text" id="fIncomeMin" placeholder="Any, e.g. 500m" autocomplete="off">
+          <span class="field-note">From their personal stats. Big sellers handle a lot of cash.</span>
+        </div>
         <div>
           <label class="field" for="fSoldWithin">Last sold something</label>
           <select id="fSoldWithin">
@@ -556,6 +570,14 @@
   </div>
 </dialog>
 
+<dialog id="fileDlg" aria-labelledby="fileTitle">
+  <div class="dlg-head">
+    <h2 id="fileTitle">Player stats</h2>
+    <button class="icon-btn" id="closeFile" type="button" aria-label="Close player stats"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="dlg-body" id="fileBody"></div>
+</dialog>
+
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -574,7 +596,7 @@ const CLOTHING_STORE = 5;                 // company type id; 7★ gives employe
 const SALE_STATS = ['bazaarprofit', 'itemmarketrevenue', 'pointssold', 'auctionsells', 'trades'];
 const SALE_SOURCE = { bazaarprofit: 'Bazaar', itemmarketrevenue: 'Item market', pointssold: 'Points', auctionsells: 'Auction', trades: 'Trade' };
 const MONEY_STATS = ['bazaarprofit', 'itemmarketrevenue'];
-const CHECK_STATS = [...SALE_STATS, 'networth', 'criminaloffenses', 'moneymugged'];  // 10 max
+const CHECK_STATS = [...SALE_STATS, 'bazaarsales', 'itemmarketsales', 'networth', 'criminaloffenses', 'rehabcost'];  // 10 max per call
 const ATTACKABLE = new Set(['Okay']);
 
 // Rank-based estimate (TornTools method): rank triggers not explained by level/crimes/networth come from battle stats.
@@ -831,8 +853,9 @@ function applyCheck(r, d, t) {
   const stats = Object.fromEntries((d.personalstats || []).map(s => [s.name, s]));
   r.networth = stats.networth?.value ?? r.networth;
   r.crimes = stats.criminaloffenses?.value ?? r.crimes;
-  r.moneyMugged = stats.moneymugged?.value;
-  r.defendsLost = stats.defendslost?.value;
+  r.bzSalesLife = stats.bazaarsales?.value ?? null;
+  r.imSalesLife = stats.itemmarketsales?.value ?? null;
+  r.rehab = stats.rehabcost?.value ?? null;
   const daysSince = n => stats[n]?.value && stats[n].timestamp ? Math.max(0, Math.floor((dayStart() - stats[n].timestamp) / 86400)) : null;
   r.saleDays = null; r.saleSource = null;
   for (const n of SALE_STATS) {
@@ -884,6 +907,8 @@ function winChance(r) {
   return { f: 0.6, label: 'Unknown' };
 }
 
+const lifetimeIncome = r => r.bzRevLife == null && r.imRevLife == null ? null : (r.bzRevLife || 0) + (r.imRevLife || 0);
+
 // Mug score 0–100: how likely they're holding fresh cash × how likely you win.
 function mugScore(r) {
   if (!r.checkedAt) return null;
@@ -896,7 +921,12 @@ function mugScore(r) {
   const amtF = amt ? clamp((Math.log10(amt) - 5) / 5, 0.05, 1) : 0.15;   // $100k → 0, $10b → 1
   if (r.bzRev7d) why.push(`Bazaar revenue this week: ${fmtMoney(r.bzRev7d)}`);
   if (r.imRev7d) why.push(`Item market revenue this week: ${fmtMoney(r.imRev7d)}`);
-  let cash = rec * (0.35 + 0.65 * amtF);
+  // How rich they are: net worth or lifetime sales income, whichever is higher ($10m → 0, $100b → 1).
+  const inc = lifetimeIncome(r);
+  const wealth = Math.max(r.networth ? clamp((Math.log10(r.networth) - 7) / 4, 0, 1) : 0, inc ? clamp((Math.log10(inc) - 7) / 4, 0, 1) : 0);
+  if (r.networth) why.push(`Net worth ${fmtMoney(r.networth)}`);
+  if (inc) why.push(`Lifetime sales income ${fmtMoney(inc)}`);
+  let cash = rec * (0.3 + 0.5 * amtF + 0.2 * wealth);
   if (r.bzOpen && r.bzValue > 0) {
     cash = Math.min(1, cash + 0.08 + 0.12 * clamp((Math.log10(r.bzValue) - 6) / 4, 0, 1));
     why.push(`Bazaar open, ${fmtMoney(r.bzValue)} listed`);
@@ -920,6 +950,7 @@ function readFilters() {
     view: $('fView').value,
     ffMax: numOrNull('fFfMax'), bsMax: parseMoney($('fBsMax').value), knownOnly: $('fKnownOnly').checked,
     soldWithin: $('fSoldWithin').value === '' ? null : +$('fSoldWithin').value,
+    nwMin: parseMoney($('fNwMin').value), incomeMin: parseMoney($('fIncomeMin').value),
     salesMin: parseMoney($('fSalesMin').value), bzRevMin: parseMoney($('fBzRevMin').value), imRevMin: parseMoney($('fImRevMin').value), bazaarOpen: $('fBazaarOpen').checked,
     lvlMin: numOrNull('fLvlMin'), lvlMax: numOrNull('fLvlMax'), active: $('fActive').value,
     attackable: $('fAttackable').checked, noClothing: $('fNoClothing').checked, noFaction: $('fNoFaction').checked,
@@ -948,9 +979,12 @@ function matches(r, f, optimistic = false) {
   if (f.bsMax != null && s && s.min > f.bsMax) return false;
   if (f.knownOnly && ff == null && !s && !may) return false;
   // cash (needs a check)
-  const cashSet = f.soldWithin != null || f.salesMin != null || f.bzRevMin != null || f.imRevMin != null || f.bazaarOpen;
+  if (f.nwMin != null && r.networth != null && r.networth < f.nwMin) return false;   // networth is known free from the net worth list
+  if (f.nwMin != null && r.networth == null && !may) return false;
+  const cashSet = f.incomeMin != null || f.soldWithin != null || f.salesMin != null || f.bzRevMin != null || f.imRevMin != null || f.bazaarOpen;
   if (cashSet && unknown) return may;
   if (f.soldWithin != null && (r.saleDays == null || r.saleDays > f.soldWithin)) return false;
+  if (f.incomeMin != null && !(lifetimeIncome(r) >= f.incomeMin)) return false;
   if (f.salesMin != null && !(r.sales7d >= f.salesMin)) return false;
   if (f.bzRevMin != null && !(r.bzRev7d >= f.bzRevMin)) return false;
   if (f.imRevMin != null && !(r.imRev7d >= f.imRevMin)) return false;
@@ -978,24 +1012,31 @@ const bazaarUrl = id => `https://www.torn.com/bazaar.php?userId=${id}`;
 const iconBtn = (act, name, label, on) => `<button type="button" class="icon-btn${on ? ' on' : ''}" data-act="${act}" aria-label="${esc(label)}" title="${esc(label)}">${icon(name)}</button>`;
 const displayName = r => r.name || (r.bazaarName ? `“${r.bazaarName}”` : `#${r.id}`);
 
-// This week's revenue from one market, with when it last changed and the lifetime total on hover.
-function revCell(week, days, life, where) {
-  if (week == null && life == null) return '<span class="muted">–</span>';
-  const title = `Lifetime ${where} revenue: ${life != null ? fmtMoney(life) : 'unknown'}${days != null ? `. Last sale ${soldLabel(days).toLowerCase()}.` : ''}`;
-  if (week == null) return `<span class="muted" title="${esc(title)}">${days != null ? soldLabel(days) : '–'}</span>`;
-  if (!week) return `<div class="two-line" title="${esc(title)}"><span class="muted">$0 this week</span><small>${days != null ? 'last ' + soldLabel(days).toLowerCase() : 'never'}</small></div>`;
-  return `<div class="two-line" title="${esc(title)}"><span${days != null && days <= 1 ? ' class="hot"' : ''}>${fmtMoney(week)}</span><small>this week · ${soldLabel(days).toLowerCase()}</small></div>`;
+// Lifetime income from one market (their stats), with number of sales and this week's amount underneath.
+function incomeCell(life, count, week, days, where) {
+  if (life == null) return '<span class="muted">–</span>';
+  if (!life) return '<span class="muted">$0</span>';
+  const title = `Lifetime ${where} income: ${fmtMoney(life)}${count != null ? ` from ${count.toLocaleString()} sales` : ''}${days != null ? `. Last sale ${soldLabel(days).toLowerCase()}.` : ''}`;
+  const sub = week ? `<small class="hot">+${fmtMoney(week)} this week</small>` : count != null ? `<small>${fmtCompact(count)} sales</small>` : '';
+  return `<div class="two-line" title="${esc(title)}"><span>${fmtMoney(life)}</span>${sub}</div>`;
 }
 
-function statusCell(r) {
-  if (!r.state) return r.checkedAt ? '' : '<span class="muted">–</span>';
-  const extra = (r.state === 'Hospital' || r.state === 'Jail') && r.until ? ` · out in ${fmtIn(r.until)}` : '';
-  const txt = r.state === 'Traveling' || r.state === 'Abroad' ? r.stateDesc || r.state : r.state + extra;
-  return `<span class="st-${esc(r.state)}" title="${esc(r.stateDesc || '')}">${esc(txt)}</span>`;
+function nowCell(r) {
+  const dot = r.online ? `<span class="dot ${r.online}" aria-hidden="true"></span>` : '';
+  const act = r.online === 'Online' ? 'Online now' : r.lastAction ? `Active ${fmtAgo(r.lastAction)}` : r.online || '';
+  let st = '';
+  if (r.state) {
+    const extra = (r.state === 'Hospital' || r.state === 'Jail') && r.until ? ` · out in ${fmtIn(r.until)}` : '';
+    const txt = r.state === 'Traveling' || r.state === 'Abroad' ? r.stateDesc || r.state : r.state + extra;
+    st = `<span class="st-${esc(r.state)}">${esc(txt)}</span>`;
+  }
+  if (!st && !act) return '<span class="muted">–</span>';
+  return `<div class="two-line" title="${esc([r.stateDesc, r.lastAction ? 'Last action ' + fmtDate(r.lastAction) : ''].filter(Boolean).join('\n'))}">${st || '<span class="muted">Status unknown</span>'}<small class="online">${dot}${esc(act)}</small></div>`;
 }
 const COLS = [
-  { key: 'act', label: 'Watch or hide', srOnly: true, nosort: true, cls: 'acts', render: r => `<div class="acts-wrap">` +
+  { key: 'act', label: 'Watch, hide or open file', srOnly: true, nosort: true, cls: 'acts', render: r => `<div class="acts-wrap">` +
       iconBtn('watch', 'star', watch[r.id] ? `Stop watching ${displayName(r)}` : `Watch ${displayName(r)}`, !!watch[r.id]) +
+      iconBtn('file', 'file', `Open ${displayName(r)}'s stats`) +
       iconBtn('hide', hidden[r.id] ? 'show' : 'hide', hidden[r.id] ? `Show ${displayName(r)} again` : `Hide ${displayName(r)}`) + `</div>` },
   { key: 'score', label: 'Mug score', get: r => mugScore(r)?.score ?? null, render: r => {
       const m = mugScore(r);
@@ -1014,14 +1055,15 @@ const COLS = [
       const detail = [ff, s ? s.label : ''].filter(Boolean).join(' · ');
       return `<div class="two-line"><span class="win-${w.label}">${w.label}</span><small>${esc(detail || 'Get Fair Fight to know')}</small></div>`;
     } },
+  { key: 'networth', label: 'Net worth', num: true, render: r => r.networth == null ? '<span class="muted">–</span>' : fmtMoney(r.networth) },
+  { key: 'bzLife', label: 'Bazaar income', num: true, get: r => r.bzRevLife ?? null, render: r => incomeCell(r.bzRevLife, r.bzSalesLife, r.bzRev7d, r.bzRevDays, 'bazaar') },
+  { key: 'imLife', label: 'Item market income', num: true, get: r => r.imRevLife ?? null, render: r => incomeCell(r.imRevLife, r.imSalesLife, r.imRev7d, r.imRevDays, 'item market') },
   { key: 'sales', label: 'Last sale', get: r => r.checkedAt ? (r.saleDays == null ? -1 : (8 - Math.min(r.saleDays, 8)) * 1e13 + (r.sales7d || 0)) : null, render: r => {
       if (!r.checkedAt) return '<span class="muted">–</span>';
       if (r.saleDays == null) return '<span class="muted">None recorded</span>';
       const hot = r.saleDays <= 1 ? ' class="hot"' : '';
       return `<div class="two-line"><span${hot}>${soldLabel(r.saleDays)}</span><small>${esc(r.saleSource || '')}</small></div>`;
     } },
-  { key: 'bzRev', label: 'Bazaar revenue', num: true, get: r => r.bzRev7d ?? null, render: r => revCell(r.bzRev7d, r.bzRevDays, r.bzRevLife, 'bazaar') },
-  { key: 'imRev', label: 'Item market revenue', num: true, get: r => r.imRev7d ?? null, render: r => revCell(r.imRev7d, r.imRevDays, r.imRevLife, 'item market') },
   { key: 'bazaar', label: 'Bazaar stock', get: r => r.bzOpen ? (r.bzValue || 1) : r.bzWeeklyIncome ? r.bzWeeklyIncome / 1e3 : r.hasBazaar ? 0 : null, render: r => {
       if (r.checkedAt) {
         if (!r.bzItems) return '<span class="muted">Empty</span>';
@@ -1031,12 +1073,7 @@ const COLS = [
       if (r.bzWeeklyCustomers) return `<div class="two-line"><span>${r.bzListedOpen ? 'Open' : 'Closed'}</span><small>${r.bzWeeklyCustomers.toLocaleString()} buyers this week</small></div>`;
       return r.hasBazaar ? 'Has items' : '<span class="muted">–</span>';
     } },
-  { key: 'active', label: 'Last active', get: r => r.online === 'Online' ? -1 : r.lastAction ? -r.lastAction : null, render: r => {
-      const dot = r.online ? `<span class="dot ${r.online}" aria-hidden="true"></span>` : '';
-      const txt = r.lastAction ? fmtAgo(r.lastAction) : r.online || '';
-      return txt ? `<span class="online" title="${esc(fmtDate(r.lastAction))}">${dot}${esc(txt)}${r.online ? `<span class="sr-only"> (${r.online})</span>` : ''}</span>` : '<span class="muted">–</span>';
-    } },
-  { key: 'state', label: 'Status', render: statusCell },
+  { key: 'now', label: 'Right now', get: r => r.online === 'Online' ? -1 : r.lastAction ? -r.lastAction : null, render: nowCell },
   { key: 'go', label: 'Attack', nosort: true, render: r => `<div class="row-actions">` +
       `<a class="btn small primary" href="${attackUrl(r.id)}" target="_blank" rel="noopener" aria-label="Attack ${esc(displayName(r))}">${icon('attack')}Attack</a>` +
       (r.hasBazaar || r.bzItems ? `<a class="icon" href="${bazaarUrl(r.id)}" target="_blank" rel="noopener" aria-label="Open ${esc(displayName(r))}'s bazaar" title="Open bazaar (buy something, then mug)">${icon('bag')}</a>` : '') + `</div>` },
@@ -1145,6 +1182,8 @@ function describeFilters() {
   if (parseMoney(v('fBsMax')) != null) out.push({ text: `Stats ≤ ${fmtCompact(parseMoney(v('fBsMax')))}`, clear: clear('fBsMax') });
   if ($('fKnownOnly').checked) out.push({ text: 'Strength known', clear: uncheck('fKnownOnly') });
   if (v('fSoldWithin')) out.push({ text: $('fSoldWithin').selectedOptions[0].textContent.replace(/^In the /, 'Sold in the ').replace(/^Today$/, 'Sold today').replace(/^Today or yesterday$/, 'Sold today or yesterday'), clear: clear('fSoldWithin') });
+  if (parseMoney(v('fNwMin')) != null) out.push({ text: `Net worth ${fmtMoney(parseMoney(v('fNwMin')))}+`, clear: clear('fNwMin') });
+  if (parseMoney(v('fIncomeMin')) != null) out.push({ text: `Lifetime sales ${fmtMoney(parseMoney(v('fIncomeMin')))}+`, clear: clear('fIncomeMin') });
   if (parseMoney(v('fSalesMin')) != null) out.push({ text: `Sales ${fmtMoney(parseMoney(v('fSalesMin')))}+ this week`, clear: clear('fSalesMin') });
   if (parseMoney(v('fBzRevMin')) != null) out.push({ text: `Bazaar ${fmtMoney(parseMoney(v('fBzRevMin')))}+ this week`, clear: clear('fBzRevMin') });
   if (parseMoney(v('fImRevMin')) != null) out.push({ text: `Item market ${fmtMoney(parseMoney(v('fImRevMin')))}+ this week`, clear: clear('fImRevMin') });
@@ -1170,7 +1209,7 @@ $('summary').addEventListener('click', e => {
   summaryItems[+b.dataset.i]?.clear(); saveForm(); render();
 });
 function updateGroupCounts() {
-  const groups = { win: ['fFfMax', 'fBsMax', '#fKnownOnly'], cash: ['fSoldWithin', 'fSalesMin', 'fBzRevMin', 'fImRevMin', '#fBazaarOpen'], target: ['fLvlMin', 'fLvlMax', 'fActive', '#fAttackable', '#fNoClothing', '#fNoFaction'] };
+  const groups = { win: ['fFfMax', 'fBsMax', '#fKnownOnly'], cash: ['fNwMin', 'fIncomeMin', 'fSoldWithin', 'fSalesMin', 'fBzRevMin', 'fImRevMin', '#fBazaarOpen'], target: ['fLvlMin', 'fLvlMax', 'fActive', '#fAttackable', '#fNoClothing', '#fNoFaction'] };
   for (const [g, ids] of Object.entries(groups)) {
     const n = ids.filter(id => id[0] === '#' ? $(id.slice(1)).checked : $(id).value.trim() !== '').length;
     const el = document.querySelector(`.group[data-group="${g}"] .count`);
@@ -1192,6 +1231,8 @@ $('tbody').addEventListener('click', e => {
     if (watch[id]) { delete watch[id]; toast(`Stopped watching ${name}`); }
     else { watch[id] = { name: r?.name || String(id), t: Date.now() }; toast(`Watching ${name}`); }
     saveWatch();
+  } else if (btn.dataset.act === 'file') {
+    openFile(id); return;
   } else if (btn.dataset.act === 'hide') {
     if (hidden[id]) { delete hidden[id]; toast(`${name} is visible again`); }
     else { hidden[id] = r?.name || String(id); toast(`Hid ${name}. Find them under Hidden.`); }
@@ -1426,6 +1467,66 @@ async function useMyLevel() {
   toast(`You're level ${lvl}. Showing levels ${Math.max(1, lvl - s)}–${Math.min(100, lvl + s)}.`);
 }
 
+// ---------- player file: every telling stat from their public personal stats (1 call, on demand) ----------
+const fileCache = {};
+const FILE_SECTIONS = [
+  ['Money & trading', [
+    ['Net worth', 'networth.total', 'money'],
+    ['Bazaar income', 'trading.bazaar.profit', 'money'], ['Bazaar sales', 'trading.bazaar.sales'], ['Bazaar customers', 'trading.bazaar.customers'],
+    ['Item market income', 'trading.item_market.revenue', 'money'], ['Item market sales', 'trading.item_market.sales'], ['Item market customers', 'trading.item_market.customers'], ['Item market fees paid', 'trading.item_market.fees', 'money'],
+    ['Points sold', 'trading.points.sold'], ['Points bought', 'trading.points.bought'], ['Trades', 'trading.trades'], ['Auctions sold', 'trading.items.auctions.sold'], ['Items sent', 'trading.items.sent'],
+    ['Items bought on market', 'trading.items.bought.market'], ['Items bought abroad', 'travel.items_bought'],
+  ]],
+  ['Spending (signs of money)', [
+    ['Rehab fees', 'drugs.rehabilitations.fees', 'money'], ['Bounties placed', 'bounties.placed.value', 'money'], ['Bail fees', 'jail.bails.fees', 'money'],
+    ['Energy refills', 'other.refills.energy'], ['Nerve refills', 'other.refills.nerve'], ['Token refills', 'other.refills.token'],
+    ['Donator days', 'other.donator_days'], ['Merits bought', 'other.merits_bought'], ['Stat enhancers used', 'items.used.stat_enhancers'], ['Xanax taken', 'drugs.xanax'],
+  ]],
+  ['Other income', [
+    ['Money mugged', 'attacking.networth.money_mugged', 'money'], ['Largest mug', 'attacking.networth.largest_mug', 'money'],
+    ['Bounty rewards collected', 'bounties.collected.value', 'money'], ['Bounties on them', 'bounties.received.value', 'money'],
+  ]],
+  ['Toughness', [
+    ['Attacks won', 'attacking.attacks.won'], ['Defends won', 'attacking.defends.won'], ['Defends lost', 'attacking.defends.lost'],
+    ['Times hospitalised', 'hospital.times_hospitalized'], ['Highest level beaten', 'attacking.highest_level_beaten'], ['Elo', 'attacking.elo'], ['Best kill streak', 'attacking.killstreak.best'],
+  ]],
+  ['Activity', [
+    ['Time played', 'other.activity.time', 'duration'], ['Current activity streak', 'other.activity.streak.current', 'days'], ['Trips abroad', 'travel.total'], ['Awards', 'other.awards'],
+  ]],
+];
+const dig = (o, path) => path.split('.').reduce((x, k) => x == null ? x : x[k], o);
+function fmtStatValue(v, kind) {
+  if (v == null) return '–';
+  if (kind === 'money') return fmtMoney(v);
+  if (kind === 'duration') return `${Math.round(v / 86400).toLocaleString()} days`;
+  if (kind === 'days') return `${v.toLocaleString()} days`;
+  return Number(v).toLocaleString();
+}
+async function openFile(id) {
+  const r = getRow(id);
+  $('fileTitle').textContent = `${displayName(r)} [${id}]`;
+  $('fileBody').innerHTML = '<p class="muted" style="padding:18px 0">Loading their stats…</p>';
+  if (!$('fileDlg').open) $('fileDlg').showModal();
+  try {
+    let ps = fileCache[id] && Date.now() - fileCache[id].t < 30 * 60000 ? fileCache[id].ps : null;
+    if (!ps) {
+      if (!apiKey) throw new FatalApiError('Add your Torn API key in Settings first.');
+      const d = await api(`/user/${id}/personalstats`, { cat: 'all' }, false);
+      if (d.error) throw new Error(d.error.error);
+      ps = d.personalstats; fileCache[id] = { t: Date.now(), ps };
+    }
+    const m = mugScore(r);
+    $('fileBody').innerHTML =
+      (m ? `<section class="dlg-section"><h3>Mug score ${m.score}</h3><p>${m.why.map(esc).join(' · ')}</p></section>` : '') +
+      FILE_SECTIONS.map(([title, items]) => `<section class="dlg-section"><h3>${title}</h3><dl class="stat-grid">${items.map(([label, path, kind]) => `<dt>${label}</dt><dd>${fmtStatValue(dig(ps, path), kind)}</dd>`).join('')}</dl></section>`).join('') +
+      `<div class="file-actions"><a class="btn primary" href="${attackUrl(id)}" target="_blank" rel="noopener">${icon('attack')}Attack</a><a class="btn" href="${profileUrl(id)}" target="_blank" rel="noopener">Open profile</a>${r.hasBazaar || r.bzItems ? `<a class="btn" href="${bazaarUrl(id)}" target="_blank" rel="noopener">${icon('bag')}Open bazaar</a>` : ''}</div>`;
+  } catch (e) {
+    $('fileBody').innerHTML = `<p style="padding:18px 0;color:var(--bad)">${esc(e instanceof StopError ? 'Stopped.' : e.message)}</p>`;
+  }
+}
+$('closeFile').addEventListener('click', () => $('fileDlg').close());
+$('fileDlg').addEventListener('click', e => { if (e.target === $('fileDlg')) $('fileDlg').close(); });
+
 // ---------- watching (Phase 4) ----------
 let watching = false, watchLoop = null;
 const flashIds = new Set();
@@ -1507,7 +1608,7 @@ function beep() {
 $('watchBtn').addEventListener('click', () => watching ? stopWatching() : startWatching());
 
 // ---------- form persistence ----------
-const FORM_FIELDS = ['rpm', 'source', 'activity', 'factionId', 'startPos', 'count', 'levelSpread', 'fView', 'fFfMax', 'fBsMax', 'fSoldWithin', 'fSalesMin', 'fBzRevMin', 'fImRevMin', 'fLvlMin', 'fLvlMax', 'fActive', 'checkCap', 'checkTtl', 'myStats'];
+const FORM_FIELDS = ['rpm', 'source', 'activity', 'factionId', 'startPos', 'count', 'levelSpread', 'fView', 'fFfMax', 'fBsMax', 'fNwMin', 'fIncomeMin', 'fSoldWithin', 'fSalesMin', 'fBzRevMin', 'fImRevMin', 'fLvlMin', 'fLvlMax', 'fActive', 'checkCap', 'checkTtl', 'myStats'];
 const FORM_CHECKS = ['autoCheck', 'fKnownOnly', 'fBazaarOpen', 'fAttackable', 'fNoClothing', 'fNoFaction', 'ffsAuto', 'watchSound', 'watchNotify'];
 function getForm() { const o = {}; FORM_FIELDS.forEach(id => o[id] = $(id).value); FORM_CHECKS.forEach(id => o[id] = $(id).checked); return o; }
 function setForm(o) {
@@ -1518,7 +1619,7 @@ function setForm(o) {
 function saveForm() { store.set('tmf_form', getForm()); }
 function loadForm() { const o = store.get('tmf_form', null); if (o) setForm(o); }
 function resetFilters() {
-  ['fFfMax', 'fBsMax', 'fSoldWithin', 'fSalesMin', 'fBzRevMin', 'fImRevMin', 'fLvlMin', 'fLvlMax', 'fActive'].forEach(id => $(id).value = '');
+  ['fFfMax', 'fBsMax', 'fNwMin', 'fIncomeMin', 'fSoldWithin', 'fSalesMin', 'fBzRevMin', 'fImRevMin', 'fLvlMin', 'fLvlMax', 'fActive'].forEach(id => $(id).value = '');
   ['fKnownOnly', 'fBazaarOpen', 'fNoFaction'].forEach(id => $(id).checked = false);
   saveForm(); render(); toast('Filters cleared');
 }
@@ -1527,8 +1628,8 @@ const QUICK = [
   { label: 'Sold today', apply: () => { $('fSoldWithin').value = '0'; } },
   { label: 'Sold this week', apply: () => { $('fSoldWithin').value = '7'; } },
   { label: 'Bazaar open', apply: () => { $('fBazaarOpen').checked = true; } },
-  { label: 'Bazaar seller', apply: () => { $('fBzRevMin').value = '1m'; } },
-  { label: 'Item market seller', apply: () => { $('fImRevMin').value = '1m'; } },
+  { label: 'Worth $1b+', apply: () => { $('fNwMin').value = '1b'; } },
+  { label: 'Big sellers ($1b+ sold)', apply: () => { $('fIncomeMin').value = '1b'; } },
   { label: 'Easy fights', apply: () => { $('fFfMax').value = '2'; } },
   { label: 'Idle or offline', apply: () => { $('fActive').value = 'notOnline'; } },
   { label: 'No faction', apply: () => { $('fNoFaction').checked = true; } },
@@ -1598,7 +1699,7 @@ $('unhideAll').addEventListener('click', () => {
   hidden = {}; saveHidden(); render(); toast('Everyone is visible again');
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && running && !$('settings').open) { stopFlag = true; e.preventDefault(); }
+  if (e.key === 'Escape' && running && !$('settings').open && !$('fileDlg').open) { stopFlag = true; e.preventDefault(); }
   else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !running) { runTask('Find players', findFn()); e.preventDefault(); }
 });
 
