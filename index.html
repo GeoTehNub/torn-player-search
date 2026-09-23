@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
-<title>Torn Player Search</title>
+<title>Torn Mug Finder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -51,24 +51,20 @@
   :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .muted { color: var(--muted); }
-  .mono { font-family: var(--mono); }
   svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
   [hidden] { display: none !important; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
   /* ---------- form controls ---------- */
-  label.field { display: block; font-size: 14px; font-weight: 500; margin: 0 0 6px; }
+  label.field, span.field { display: block; font-size: 14px; font-weight: 500; margin: 0 0 6px; }
   .field-note { display: block; font-size: 13.5px; color: var(--muted); margin-top: 6px; }
-  input, select, button, textarea { font: inherit; color: var(--text); }
+  input, select, button { font: inherit; color: var(--text); }
   input[type=text], input[type=number], input[type=password], select {
     width: 100%; min-height: 40px; padding: 8px 11px; background: var(--surface-2);
     border: 1px solid var(--line); border-radius: 8px;
   }
   input::placeholder { color: var(--muted); opacity: .8; }
-  input:hover, select:hover { border-color: var(--surface-3); }
   input:focus, select:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent); }
-  select[multiple] { min-height: 200px; padding: 6px; }
-  select[multiple] option { padding: 5px 8px; border-radius: 4px; }
   .check { display: flex; align-items: center; gap: 10px; font-size: 15px; cursor: pointer; min-height: 32px; }
   .check input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; flex: 0 0 auto; }
   .range { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
@@ -79,9 +75,9 @@
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     min-height: 40px; padding: 8px 14px; border-radius: 8px; cursor: pointer;
-    background: var(--surface-2); border: 1px solid var(--line); font-weight: 500; font-size: 15px; white-space: nowrap;
+    background: var(--surface-2); border: 1px solid var(--line); font-weight: 500; font-size: 15px; white-space: nowrap; color: var(--text);
   }
-  .btn:hover { background: var(--surface-3); }
+  .btn:hover { background: var(--surface-3); text-decoration: none; }
   .btn:disabled { opacity: .5; cursor: not-allowed; }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
   .btn.primary:hover { filter: brightness(1.08); }
@@ -90,6 +86,7 @@
   .btn.ghost:hover { background: var(--surface-2); }
   .btn.small { min-height: 34px; padding: 5px 11px; font-size: 14px; }
   .btn.big { min-height: 46px; padding: 10px 22px; font-size: 16px; }
+  .btn.on { background: var(--accent-soft); border-color: var(--accent); }
   .icon-btn { width: 36px; height: 36px; display: inline-grid; place-items: center; border-radius: 8px; background: transparent; border: 0; color: var(--muted); cursor: pointer; }
   .icon-btn:hover { background: var(--surface-3); color: var(--text); }
   .icon-btn.on { color: var(--accent); }
@@ -110,10 +107,10 @@
 
   /* ---------- scan bar ---------- */
   .scanbar { padding: 18px 24px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
-  .scan-grid { display: grid; grid-template-columns: minmax(220px, 1.3fr) minmax(200px, 1.2fr) minmax(120px, .6fr) minmax(120px, .6fr) auto; gap: 14px; align-items: end; }
+  .scan-grid { display: grid; grid-template-columns: minmax(240px, 1.4fr) minmax(200px, 1fr) minmax(150px, .7fr) auto; gap: 14px; align-items: end; }
   .scan-actions { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
   .scan-foot { display: flex; align-items: center; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
-  .progress { flex: 1; min-width: 200px; display: flex; align-items: center; gap: 12px; }
+  .progress { flex: 1; min-width: 220px; display: flex; align-items: center; gap: 12px; }
   .bar { flex: 1; height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; }
   .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
   #status { font-size: 14.5px; color: var(--muted); min-width: 0; }
@@ -123,10 +120,10 @@
   details.log summary::before { content: "▸"; transition: transform .15s; }
   details.log[open] summary::before { transform: rotate(90deg); }
   #log { margin-top: 10px; max-height: 160px; overflow: auto; font: 13px/1.6 var(--mono); color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
-  #log .err { color: var(--bad); } #log .warn { color: var(--warn); }
+  #log .err { color: var(--bad); } #log .warn { color: var(--warn); } #log .alert { color: var(--accent); }
 
   /* ---------- layout ---------- */
-  .layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 24px; padding: 24px; align-items: start; }
+  .layout { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 24px; padding: 24px; align-items: start; }
 
   /* ---------- filters ---------- */
   .filters { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; }
@@ -135,7 +132,7 @@
   .filters-block { padding: 10px 18px 16px; border-bottom: 1px solid var(--line); }
   .quick { display: flex; flex-wrap: wrap; gap: 8px; }
   .quick button { min-height: 34px; padding: 5px 12px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); font-size: 14px; cursor: pointer; }
-  .quick button:hover { border-color: var(--accent); color: var(--text); background: var(--accent-soft); }
+  .quick button:hover { border-color: var(--accent); background: var(--accent-soft); }
   .group { border-bottom: 1px solid var(--line); }
   .group:last-child { border-bottom: 0; }
   .group > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 15px 18px; font-weight: 600; font-size: 16px; }
@@ -144,9 +141,14 @@
   .group[open] > summary .chev { transform: rotate(180deg); }
   .group > summary:hover { background: var(--surface-2); }
   .group .count { font-size: 13px; font-weight: 600; background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 1px 8px; }
-  .group .cost { font-size: 13px; font-weight: 500; color: var(--muted); }
   .group-body { padding: 2px 18px 18px; display: grid; gap: 16px; }
-  .status-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; }
+
+  /* ---------- alerts ---------- */
+  .alerts { display: grid; gap: 8px; margin-bottom: 14px; }
+  .alert-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; border-radius: var(--radius); background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); flex-wrap: wrap; }
+  .alert-item .what { flex: 1; min-width: 200px; }
+  .alert-item .what b { font-weight: 600; }
+  .alert-item .when { color: var(--muted); font-size: 14px; }
 
   /* ---------- results ---------- */
   .results { min-width: 0; }
@@ -161,15 +163,11 @@
   .summary .lead { color: var(--muted); }
   .chip-x { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 4px 8px 4px 12px; border-radius: 999px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); font-size: 14.5px; cursor: pointer; color: var(--text); }
   .chip-x svg { width: 15px; height: 15px; color: var(--muted); }
-  .chip-x:hover svg { color: var(--text); }
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
   .toolbar .spacer { flex: 1; }
-  .menu-wrap { position: relative; }
-  .menu-wrap > summary { list-style: none; }
-  .menu-wrap > summary::-webkit-details-marker { display: none; }
-  .menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; width: 230px; box-shadow: var(--shadow); }
+  .watch-state { font-size: 14px; color: var(--muted); }
 
-  .tablewrap { overflow: auto; max-height: calc(100vh - 150px); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+  .tablewrap { position: relative; overflow: auto; max-height: calc(100vh - 150px); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
   table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 14.5px; }
   th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; vertical-align: middle; }
   th { position: sticky; top: 0; z-index: 2; background: var(--surface-2); font-size: 13.5px; font-weight: 600; color: var(--muted); }
@@ -180,35 +178,45 @@
   td.num { font-family: var(--mono); font-size: 14px; }
   tbody tr:hover td { background: color-mix(in srgb, var(--surface-2) 70%, transparent); }
   tbody tr.watched td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  tbody tr.flash td { background: var(--accent-soft); }
   td.acts { padding: 4px 6px; }
-  .acts-wrap { display: flex; gap: 0; }
+  .acts-wrap { display: flex; }
   .player a { font-weight: 600; font-size: 15px; color: var(--text); }
   .player a:hover { color: var(--link); }
   .player .id { color: var(--muted); font-family: var(--mono); font-size: 13px; margin-left: 6px; }
+  .player .sub { display: block; font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 13px; background: var(--surface-3); margin-left: 6px; }
+  .tag.bad { color: var(--bad); }
+  .score { display: flex; align-items: center; gap: 10px; min-width: 110px; }
+  .score b { font-family: var(--mono); font-weight: 500; font-size: 16px; min-width: 28px; text-align: right; }
+  .score .meter { flex: 1; height: 8px; min-width: 56px; background: var(--surface-3); border-radius: 4px; overflow: hidden; }
+  .score .meter > div { height: 100%; background: var(--accent); }
+  .two-line { display: flex; flex-direction: column; line-height: 1.35; }
+  .two-line small { font-size: 13px; color: var(--muted); }
+  .win-Easy, .win-Likely { color: var(--good); } .win-Risky { color: var(--warn); } .win-Unlikely { color: var(--bad); }
   .online { display: inline-flex; align-items: center; gap: 7px; }
-  .online .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; display: inline-block; }
   .dot.Online { background: var(--good); } .dot.Idle { background: var(--warn); } .dot.Offline { background: var(--muted); opacity: .6; }
-  .est-rank { color: var(--muted); }
-  .tag { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 13px; background: var(--surface-3); }
-  .st-Okay { color: var(--good); } .st-Hospital { color: var(--bad); } .st-Jail { color: var(--warn); } .st-Traveling, .st-Abroad { color: var(--info); } .st-Federal, .st-Fallen { color: var(--muted); }
-  td.note { max-width: 220px; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
-  .links { display: flex; gap: 0; }
-  .links a { width: 34px; height: 34px; display: inline-grid; place-items: center; border-radius: 8px; color: var(--muted); }
-  .links a:hover { background: var(--surface-3); color: var(--text); text-decoration: none; }
+  .st-Okay { color: var(--good); } .st-Hospital, .st-Jail, .st-Federal { color: var(--bad); } .st-Traveling, .st-Abroad { color: var(--info); } .st-Fallen { color: var(--muted); }
+  .hot { color: var(--accent); font-weight: 600; }
+  .row-actions { display: flex; gap: 4px; align-items: center; }
+  .row-actions .btn { min-height: 34px; padding: 4px 12px; font-size: 14px; }
+  .row-actions a.icon { width: 34px; height: 34px; display: inline-grid; place-items: center; border-radius: 8px; color: var(--muted); }
+  .row-actions a.icon:hover { background: var(--surface-3); color: var(--text); }
   #renderNote { font-size: 14px; color: var(--muted); margin-top: 10px; }
 
   /* ---------- empty states ---------- */
   .empty { padding: 56px 32px; text-align: center; }
   .empty h3 { font-size: 21px; margin: 0 0 8px; font-weight: 600; }
-  .empty p { color: var(--muted); margin: 0 auto 18px; max-width: 520px; font-size: 15.5px; }
-  .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; max-width: 760px; margin: 24px auto 0; text-align: left; }
+  .empty p { color: var(--muted); margin: 0 auto 18px; max-width: 540px; font-size: 15.5px; }
+  .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; max-width: 800px; margin: 24px auto 0; text-align: left; }
   .step { background: var(--surface-2); border-radius: var(--radius); padding: 16px 18px; }
   .step b { display: block; font-size: 16px; margin-bottom: 4px; }
   .step span { color: var(--muted); font-size: 14.5px; }
   .step .n { font-family: var(--display); font-size: 26px; color: var(--accent); line-height: 1; display: block; margin-bottom: 6px; }
 
   /* ---------- settings dialog ---------- */
-  dialog { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--text); padding: 0; width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 48px); box-shadow: var(--shadow); }
+  dialog { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--text); padding: 0; width: min(660px, calc(100vw - 32px)); max-height: calc(100vh - 48px); box-shadow: var(--shadow); }
   dialog::backdrop { background: rgba(5, 8, 12, .6); }
   .dlg-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--surface); z-index: 1; }
   .dlg-head h2 { margin: 0; font-size: 21px; font-weight: 600; }
@@ -225,7 +233,7 @@
   .tos b { color: var(--text); font-weight: 600; }
   kbd { font: 13px var(--mono); background: var(--surface-3); border-radius: 5px; padding: 1px 6px; }
 
-  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px); background: var(--text); color: var(--bg); padding: 10px 18px; border-radius: 10px; font-weight: 500; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 50; }
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px); background: var(--text); color: var(--bg); padding: 10px 18px; border-radius: 10px; font-weight: 500; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 50; max-width: calc(100vw - 32px); }
   #toast.show { opacity: 1; transform: translateX(-50%); }
 
   .mobile-only { display: none; }
@@ -256,14 +264,10 @@
 <!-- icon sprite -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></symbol>
-  <symbol id="i-note" viewBox="0 0 24 24"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"/><path d="M14 6l3 3"/></symbol>
   <symbol id="i-hide" viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M10.6 5.1A9.6 9.6 0 0 1 12 5c6.5 0 9.5 7 9.5 7a15 15 0 0 1-2.3 3.3M6.6 6.6C3.9 8.4 2.5 12 2.5 12s3 7 9.5 7a9 9 0 0 0 4.6-1.3"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></symbol>
   <symbol id="i-show" viewBox="0 0 24 24"><path d="M2.5 12s3-7 9.5-7 9.5 7 9.5 7-3 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="3"/></symbol>
   <symbol id="i-attack" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></symbol>
-  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6 8.5-6"/></symbol>
-  <symbol id="i-trade" viewBox="0 0 24 24"><path d="M16 3l4 4-4 4M20 7H4M8 21l-4-4 4-4M4 17h16"/></symbol>
   <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 7h14l-1 13H6z"/><path d="M9 10V6a3 3 0 0 1 6 0v4"/></symbol>
-  <symbol id="i-friend" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6"/></symbol>
   <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
   <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
@@ -271,79 +275,73 @@
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
   <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></symbol>
   <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></symbol>
-  <symbol id="i-details" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></symbol>
   <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></symbol>
-  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
-  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
-  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
-  <symbol id="i-columns" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12s3-7 9.5-7 9.5 7 9.5 7-3 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></symbol>
 </svg>
 
 <header class="topbar">
-  <h1 class="brand">Torn <span>Player Search</span></h1>
+  <h1 class="brand">Torn <span>Mug Finder</span></h1>
   <div class="spacer"></div>
   <div class="rate" title="API calls this tool made in the last 60 seconds, against your per-minute budget">
     <span>API use</span><div class="meter" aria-hidden="true"><div id="rateBar"></div></div><b id="rateText">0/80</b>
   </div>
-  <button class="key-badge" id="keyBadge" type="button"><span class="dot"></span><span id="keyBadgeText">No API key</span></button>
+  <button class="key-badge" id="keyBadge" type="button"><span class="dot"></span><span id="keyBadgeText">Add API key</span></button>
   <button class="btn" id="openSettings" type="button"><svg class="i"><use href="#i-settings"/></svg>Settings</button>
 </header>
 
-<!-- ============ scan bar ============ -->
-<section class="scanbar" aria-label="Scan the Hall of Fame">
+<!-- ============ find ============ -->
+<section class="scanbar" aria-label="Find players">
   <div class="scan-grid">
     <div>
-      <label class="field" for="mode">What to scan</label>
-      <select id="mode">
-        <option value="category">A Hall of Fame list, from the top</option>
-        <option value="levelband">Players in my level range</option>
+      <label class="field" for="source">Find players from</label>
+      <select id="source">
+        <option value="search">Players active right now</option>
+        <option value="bazaar">Top-earning bazaars this week</option>
+        <option value="levelband">Everyone in my level range</option>
+        <option value="networth">Richest players (net worth)</option>
+        <option value="faction">A faction's members</option>
       </select>
     </div>
-    <div id="catOpts">
-      <label class="field" for="cat">Hall of Fame list</label>
-      <select id="cat">
-        <option value="networth">Net worth</option>
-        <option value="level">Level</option>
-        <option value="rank">Rank</option>
-        <option value="awards">Awards</option>
-        <option value="workstats">Working stats</option>
-        <option value="attacks">Attacks</option>
-        <option value="defends">Defends</option>
-        <option value="offences">Offences</option>
-        <option value="revives">Revives</option>
-        <option value="busts">Busts</option>
-        <option value="traveltime">Travel time</option>
-        <option value="racingskill">Racing skill</option>
-        <option value="racingpoints">Racing points</option>
-        <option value="racingwins">Racing wins</option>
+    <div id="optActivity">
+      <label class="field" for="activity">Last active</label>
+      <select id="activity">
+        <option value="lastActionNow">Right now</option>
+        <option value="lastActionRecent">In the last few minutes</option>
+        <option value="lastActionHourAgo">About an hour ago</option>
+        <option value="lastActionDayAgo">About a day ago</option>
       </select>
     </div>
-    <div id="bandOpts" hidden>
-      <label class="field">Level range</label>
-      <div class="field-note" style="margin-top:0" id="bandNote">Set the level range in Filters, or use “Use my level”.</div>
+    <div id="optFaction" hidden>
+      <label class="field" for="factionId">Faction ID</label>
+      <input type="number" id="factionId" inputmode="numeric" placeholder="e.g. 8336">
     </div>
-    <div id="startWrap">
-      <label class="field" for="startPos">Start at position</label>
+    <div id="optStart" hidden>
+      <label class="field" for="startPos">Start at rank</label>
       <input type="number" id="startPos" value="1" min="1" inputmode="numeric">
     </div>
-    <div>
-      <label class="field" for="maxPages">Players to scan</label>
-      <select id="maxPages">
-        <option value="5">500</option>
-        <option value="10">1,000</option>
-        <option value="20" selected>2,000</option>
-        <option value="50">5,000</option>
-        <option value="100">10,000</option>
-        <option value="200">20,000</option>
+    <div id="optBazaar" hidden>
+      <span class="field">Source</span>
+      <span class="field-note" style="margin-top:0">Torn's weekly lists of the busiest and highest-earning bazaars. One call, up to 80 sellers.</span>
+    </div>
+    <div id="optCount">
+      <label class="field" for="count">How many</label>
+      <select id="count">
+        <option value="100">100 players</option>
+        <option value="250" selected>250 players</option>
+        <option value="500">500 players</option>
+        <option value="1000">1,000 players</option>
+        <option value="2500">2,500 players</option>
       </select>
     </div>
     <div class="scan-actions">
-      <button class="btn primary big" id="scanBtn" type="button" title="Ctrl + Enter"><svg class="i"><use href="#i-search"/></svg>Scan</button>
-      <button class="btn big" id="continueBtn" type="button" disabled title="Scan the next batch from where the last scan stopped">Scan more<svg class="i"><use href="#i-play"/></svg></button>
+      <button class="btn primary big" id="scanBtn" type="button" title="Ctrl + Enter"><svg class="i"><use href="#i-search"/></svg>Find players</button>
+      <button class="btn big" id="continueBtn" type="button" disabled title="Continue from where the last search stopped">Find more<svg class="i"><use href="#i-play"/></svg></button>
     </div>
   </div>
   <div class="scan-foot">
-    <label class="check"><input type="checkbox" id="autoLookup"> Also look up job &amp; status details after scanning</label>
+    <label class="check"><input type="checkbox" id="autoCheck" checked> Check them for cash signals right after</label>
     <div class="progress">
       <div class="bar" aria-hidden="true"><div id="progress"></div></div>
       <span id="status" role="status">Ready</span>
@@ -365,35 +363,46 @@
       <div class="quick" id="quickChips" aria-label="Quick filters"></div>
     </div>
 
-    <div class="filters-block">
-      <label class="field" for="presetSel">Saved searches</label>
-      <div class="inline">
-        <select id="presetSel"><option value="">Choose a saved search…</option></select>
-        <button class="btn small" id="presetSave" type="button">Save</button>
-        <button class="icon-btn" id="presetDel" type="button" aria-label="Delete saved search" title="Delete saved search"><svg class="i"><use href="#i-x"/></svg></button>
-      </div>
-    </div>
-
-    <details class="group" open data-group="activity">
-      <summary>Activity <span class="count" hidden></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+    <details class="group" open data-group="win">
+      <summary>Can I take them? <span class="count" hidden></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
       <div class="group-body">
         <div>
-          <label class="field" id="laLabel">Last active</label>
-          <div class="range" role="group" aria-labelledby="laLabel">
-            <input type="number" id="fLaMin" step="any" min="0" placeholder="Any" aria-label="At least this long ago">
-            <span class="to">to</span>
-            <input type="number" id="fLaMax" step="any" min="0" placeholder="Any" aria-label="At most this long ago">
-          </div>
-          <div class="inline" style="margin-top:8px">
-            <select id="fLaUnit" aria-label="Time unit"><option value="3600">hours ago</option><option value="86400" selected>days ago</option></select>
-          </div>
-          <span class="field-note">Up to 1 day ago = played today. 30 days to Any = inactive for a month or more.</span>
+          <label class="field" for="fFfMax">Fair Fight, at most</label>
+          <input type="number" id="fFfMax" step="0.05" min="1" max="3" placeholder="Any" inputmode="decimal">
+          <span class="field-note">From FFScouter. 1 = far weaker than you, 3 = about as strong or stronger.</span>
         </div>
+        <div>
+          <label class="field" for="fBsMax">Estimated stats, at most</label>
+          <input type="text" id="fBsMax" placeholder="Any, e.g. 5m" autocomplete="off">
+        </div>
+        <label class="check"><input type="checkbox" id="fKnownOnly"> Only players whose strength is known</label>
       </div>
     </details>
 
-    <details class="group" open data-group="level">
-      <summary>Level &amp; account <span class="count" hidden></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+    <details class="group" open data-group="cash">
+      <summary>Cash signals <span class="count" hidden></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+      <div class="group-body">
+        <div>
+          <label class="field" for="fSoldWithin">Last sold something</label>
+          <select id="fSoldWithin">
+            <option value="">Any time</option>
+            <option value="0">Today</option>
+            <option value="1">Today or yesterday</option>
+            <option value="3">In the last 3 days</option>
+            <option value="7">In the last week</option>
+          </select>
+          <span class="field-note">Bazaar, item market, points or auction sales. Torn records these once a day.</span>
+        </div>
+        <div>
+          <label class="field" for="fSalesMin">Sales this week, at least</label>
+          <input type="text" id="fSalesMin" placeholder="Any, e.g. 50m" autocomplete="off">
+        </div>
+        <label class="check"><input type="checkbox" id="fBazaarOpen"> Bazaar open with items</label>
+      </div>
+    </details>
+
+    <details class="group" open data-group="target">
+      <summary>Target <span class="count" hidden></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
       <div class="group-body">
         <div>
           <label class="field" id="lvlLabel">Level</label>
@@ -404,128 +413,49 @@
           </div>
           <div class="inline" style="margin-top:8px">
             <button class="btn small" id="myLevelBtn" type="button">Use my level ±</button>
-            <input type="number" id="levelSpread" value="3" min="0" max="50" aria-label="Levels either side of mine" style="max-width:72px">
+            <input type="number" id="levelSpread" value="5" min="0" max="50" aria-label="Levels either side of mine" style="max-width:72px">
           </div>
         </div>
         <div>
-          <label class="field" id="ageLabel">Account age (days)</label>
-          <div class="range" role="group" aria-labelledby="ageLabel">
-            <input type="number" id="fAgeMin" min="0" placeholder="Any" aria-label="Minimum account age in days">
-            <span class="to">to</span>
-            <input type="number" id="fAgeMax" min="0" placeholder="Any" aria-label="Maximum account age in days">
-          </div>
+          <label class="field" for="fActive">Activity</label>
+          <select id="fActive">
+            <option value="">Any</option>
+            <option value="notOnline">Idle or offline (not watching)</option>
+            <option value="online">Online now</option>
+            <option value="1">Active in the last day</option>
+            <option value="7">Active in the last week</option>
+          </select>
         </div>
-        <div>
-          <label class="field" for="fName">Name contains</label>
-          <input type="text" id="fName" autocomplete="off" spellcheck="false">
-        </div>
-      </div>
-    </details>
-
-    <details class="group" open data-group="wealth">
-      <summary>Wealth &amp; faction <span class="count" hidden></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
-      <div class="group-body">
-        <div>
-          <label class="field" id="nwLabel">Net worth</label>
-          <div class="range" role="group" aria-labelledby="nwLabel">
-            <input type="text" id="fNwMin" placeholder="Any" aria-label="Minimum net worth" autocomplete="off">
-            <span class="to">to</span>
-            <input type="text" id="fNwMax" placeholder="Any" aria-label="Maximum net worth" autocomplete="off">
-          </div>
-          <span class="field-note">Type amounts like 500m or 2.5b.</span>
-        </div>
-        <div>
-          <label class="field" for="fFaction">Faction</label>
-          <div class="inline">
-            <select id="fFaction"><option value="">Any</option><option value="none">No faction</option><option value="in">In a faction</option><option value="id">A specific faction…</option></select>
-          </div>
-          <input type="number" id="fFactionId" placeholder="Faction ID" aria-label="Faction ID" style="margin-top:8px" hidden>
-        </div>
-      </div>
-    </details>
-
-    <details class="group" data-group="stats">
-      <summary>Battle stats <span class="count" hidden></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
-      <div class="group-body">
-        <div>
-          <label class="field" id="bsLabel">Estimated total stats</label>
-          <div class="range" role="group" aria-labelledby="bsLabel">
-            <input type="text" id="fBsMin" placeholder="Any" aria-label="Minimum estimated stats" autocomplete="off">
-            <span class="to">to</span>
-            <input type="text" id="fBsMax" placeholder="Any" aria-label="Maximum estimated stats" autocomplete="off">
-          </div>
-          <span class="field-note">Type amounts like 250k or 2m. Estimates come from each player's rank (free, after looking up details) or from FFScouter.</span>
-        </div>
-        <div>
-          <label class="field" id="ffLabel">Fair Fight</label>
-          <div class="range" role="group" aria-labelledby="ffLabel">
-            <input type="number" id="fFfMin" step="any" min="1" placeholder="Any" aria-label="Minimum Fair Fight">
-            <span class="to">to</span>
-            <input type="number" id="fFfMax" step="any" min="1" placeholder="Any" aria-label="Maximum Fair Fight">
-          </div>
-          <span class="field-note">Needs FFScouter. Higher means a fairer fight against you.</span>
-        </div>
-      </div>
-    </details>
-
-    <details class="group" data-group="job">
-      <summary>Job &amp; status <span class="cost">needs details</span><span class="count" hidden></span><svg class="i chev"><use href="#i-chev"/></svg></summary>
-      <div class="group-body">
-        <div>
-          <label class="field" for="fJob">Job or company type</label>
-          <select id="fJob" multiple></select>
-          <span class="field-note">Hold Ctrl (or ⌘) to pick several.</span>
-        </div>
-        <div>
-          <label class="field" for="fPos">Position contains</label>
-          <input type="text" id="fPos" placeholder="e.g. Director" autocomplete="off">
-        </div>
-        <div>
-          <label class="field" for="fStars">Company stars, at least</label>
-          <select id="fStars"><option value="">Any</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select>
-        </div>
-        <div>
-          <span class="field" id="stLabel">Current status</span>
-          <div class="status-checks" id="fStatus" role="group" aria-labelledby="stLabel"></div>
-        </div>
-        <div>
-          <label class="field" for="fDonator">Donator</label>
-          <select id="fDonator"><option value="">Any</option><option value="yes">Donator or subscriber</option><option value="no">Not a donator</option></select>
-        </div>
-        <div>
-          <label class="field" for="fProp">Property contains</label>
-          <input type="text" id="fProp" placeholder="e.g. Private Island" autocomplete="off">
-        </div>
+        <label class="check"><input type="checkbox" id="fAttackable" checked> Only players I can attack now</label>
+        <label class="check"><input type="checkbox" id="fNoClothing" checked> Hide mug-protected players (7★ Clothing Store)</label>
+        <label class="check"><input type="checkbox" id="fNoFaction"> Only players without a faction</label>
       </div>
     </details>
   </aside>
 
   <!-- ============ results ============ -->
   <main class="results">
+    <div class="alerts" id="alerts" aria-live="polite"></div>
+
     <div class="res-head">
       <div class="segmented" role="group" aria-label="Which players to show">
-        <button type="button" data-view="all" aria-pressed="true">All players</button>
-        <button type="button" data-view="watch" aria-pressed="false">Watchlist<span class="n" id="watchCount">0</span></button>
+        <button type="button" data-view="all" aria-pressed="true">Targets</button>
+        <button type="button" data-view="watch" aria-pressed="false">Watching<span class="n" id="watchCount">0</span></button>
         <button type="button" data-view="hidden" aria-pressed="false">Hidden<span class="n" id="hiddenCount">0</span></button>
       </div>
       <select id="fView" hidden><option value="all">all</option><option value="watch">watch</option><option value="hidden">hidden</option></select>
-      <div class="counts"><b id="countShown">0</b> shown · <span id="countTotal">0</span> scanned · <span id="countEnriched">0</span> with details</div>
+      <div class="counts"><b id="countShown">0</b> shown · <span id="countTotal">0</span> found · <span id="countChecked">0</span> checked</div>
     </div>
 
     <div class="summary" id="summary" aria-live="polite"></div>
 
     <div class="toolbar">
       <button class="btn mobile-only" id="toggleFilters" type="button" aria-controls="filters" aria-expanded="false"><svg class="i"><use href="#i-filter"/></svg>Filters</button>
-      <button class="btn primary" id="enrichBtn" type="button"><svg class="i"><use href="#i-details"/></svg><span id="enrichLabel">Look up details</span></button>
-      <button class="btn" id="ffsBtn" type="button"><svg class="i"><use href="#i-gauge"/></svg><span id="ffsLabel">FFScouter estimates</span></button>
-      <button class="btn" id="factionBtn" type="button"><svg class="i"><use href="#i-flag"/></svg><span id="factionLabel">Faction names</span></button>
+      <button class="btn primary" id="checkBtn" type="button"><svg class="i"><use href="#i-check"/></svg><span id="checkLabel">Check players</span></button>
+      <button class="btn" id="ffsBtn" type="button"><svg class="i"><use href="#i-gauge"/></svg><span id="ffsLabel">Get Fair Fight</span></button>
       <div class="spacer"></div>
-      <button class="btn ghost" id="copyIdsBtn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy IDs</button>
-      <button class="btn ghost" id="csvBtn" type="button"><svg class="i"><use href="#i-download"/></svg>Export CSV</button>
-      <details class="menu-wrap" id="colsMenu">
-        <summary class="btn ghost"><svg class="i"><use href="#i-columns"/></svg>Columns</summary>
-        <div class="menu" id="colMenu"></div>
-      </details>
+      <span class="watch-state" id="watchState"></span>
+      <button class="btn" id="watchBtn" type="button" aria-pressed="false"><svg class="i"><use href="#i-bell"/></svg><span id="watchLabel">Start watching</span></button>
     </div>
 
     <div class="tablewrap" id="tablewrap">
@@ -558,17 +488,29 @@
     </section>
 
     <section class="dlg-section">
-      <h3>FFScouter (optional)</h3>
-      <p>Adds more accurate stat estimates and Fair Fight. Your key must be registered at FFScouter first. Using it sends your key and the IDs of matching players to ffscouter.com. <a href="https://ffscouter.com/" target="_blank" rel="noopener">Sign up and read their Data Policy &amp; Terms</a>.</p>
+      <h3>Fair Fight (FFScouter)</h3>
+      <p>Fair Fight tells you whether you can beat someone. It comes from FFScouter, which needs your key registered there first. Using it sends your key and the IDs of players you're checking to ffscouter.com. <a href="https://ffscouter.com/" target="_blank" rel="noopener">Sign up and read their Data Policy &amp; Terms</a>.</p>
       <div class="inline">
         <input type="password" id="ffsKey" placeholder="Registered key" autocomplete="off" aria-label="FFScouter key" spellcheck="false">
         <button class="btn" id="ffsUseTorn" type="button">Use my Torn key</button>
       </div>
-      <label class="check"><input type="checkbox" id="ffsAuto"> Get FFScouter estimates automatically after each scan</label>
+      <label class="check"><input type="checkbox" id="ffsAuto" checked> Get Fair Fight automatically after checking players</label>
+      <div>
+        <label class="field" for="myStats">My total battle stats (optional)</label>
+        <input type="text" id="myStats" placeholder="e.g. 12m" autocomplete="off">
+        <span class="field-note">Used to judge fights when FFScouter has no number, by comparing with the rank-based estimate.</span>
+      </div>
     </section>
 
     <section class="dlg-section">
-      <h3>Speed &amp; caching</h3>
+      <h3>Watching</h3>
+      <p>While this page is open, watched players are re-checked about every 30 seconds (1 call each). You're alerted when their bazaar stock drops (a sale just put cash in their wallet) or when they become attackable. Alerts only link to the attack page; you always click it yourself.</p>
+      <label class="check"><input type="checkbox" id="watchSound" checked> Play a sound on alerts</label>
+      <label class="check"><input type="checkbox" id="watchNotify"> Show desktop notifications</label>
+    </section>
+
+    <section class="dlg-section">
+      <h3>Speed</h3>
       <div class="two">
         <div>
           <label class="field" for="rpm">API calls per minute</label>
@@ -576,28 +518,17 @@
           <span class="field-note">Torn allows 100 across all your tools. 80 leaves room for others.</span>
         </div>
         <div>
-          <label class="field" for="enrichCap">Players per detail lookup</label>
-          <input type="number" id="enrichCap" value="200" min="1" inputmode="numeric">
-          <span class="field-note">One call each. 200 takes about 2½ minutes.</span>
+          <label class="field" for="checkCap">Players per check</label>
+          <input type="number" id="checkCap" value="100" min="1" inputmode="numeric">
+          <span class="field-note">1–2 calls each.</span>
         </div>
         <div>
-          <label class="field" for="cacheHours">Reuse details for (hours)</label>
-          <input type="number" id="cacheHours" value="12" min="0" inputmode="numeric">
+          <label class="field" for="checkTtl">Re-check after (minutes)</label>
+          <input type="number" id="checkTtl" value="30" min="1" inputmode="numeric">
         </div>
       </div>
       <div class="btn-row">
-        <button class="btn small" id="clearCacheBtn" type="button">Forget looked-up details</button>
-        <button class="btn small danger" id="clearBtn" type="button">Clear scanned players</button>
-      </div>
-    </section>
-
-    <section class="dlg-section">
-      <h3>Watchlist</h3>
-      <p>Back up your watched players, notes and hidden players, or move them to another browser.</p>
-      <div class="btn-row">
-        <button class="btn small" id="watchExport" type="button"><svg class="i"><use href="#i-download"/></svg>Export</button>
-        <button class="btn small" id="watchImportBtn" type="button">Import</button>
-        <input type="file" id="watchImport" accept=".json,application/json" hidden>
+        <button class="btn small danger" id="clearBtn" type="button">Clear found players</button>
         <button class="btn small" id="unhideAll" type="button">Un-hide everyone</button>
       </div>
     </section>
@@ -605,13 +536,14 @@
     <section class="dlg-section">
       <h3>How your data is used</h3>
       <ul class="tos">
-        <li><b>Storage:</b> everything stays in this browser (scan results, looked-up details, watchlist, notes, saved searches and, if you allow it, your keys).</li>
-        <li><b>Sharing:</b> no server and no analytics. The page talks to api.torn.com, and to ffscouter.com only if you use FFScouter.</li>
-        <li><b>Purpose:</b> personal player search over public Hall of Fame and profile data.</li>
+        <li><b>Storage:</b> everything stays in this browser (found players, check results, watch list and, if you allow it, your keys).</li>
+        <li><b>Sharing:</b> no server and no analytics. The page talks to api.torn.com, and to ffscouter.com only if you use Fair Fight.</li>
+        <li><b>Purpose:</b> personal gain: finding players to mug, using public data only.</li>
         <li><b>Key access:</b> Public. Every Torn endpoint used is public.</li>
-        <li><b>Rate limit:</b> never more than your per-minute budget in any 60 seconds (hard cap 100). It pauses when Torn says “too many requests” and forgets a key that Torn rejects.</li>
+        <li><b>Rate limit:</b> never more than your per-minute budget in any 60 seconds (hard cap 100). It pauses when Torn says “too many requests” and forgets a key Torn rejects.</li>
+        <li><b>No automation:</b> the tool never opens the attack page or attacks. Every attack is your own click.</li>
       </ul>
-      <p>Shortcuts: <kbd>Ctrl</kbd> + <kbd>Enter</kbd> scan · <kbd>Esc</kbd> stop · <kbd>/</kbd> search names</p>
+      <p>Shortcuts: <kbd>Ctrl</kbd> + <kbd>Enter</kbd> find players · <kbd>Esc</kbd> stop</p>
     </section>
   </div>
 </dialog>
@@ -621,38 +553,30 @@
 <script>
 'use strict';
 const API = 'https://api.torn.com/v2';
-const COMMENT = 'PlayerSearch';
+const COMMENT = 'MugFinder';
 const $ = id => document.getElementById(id);
-const icon = (name, label) => `<svg class="i"${label ? '' : ' aria-hidden="true"'}><use href="#i-${name}"/></svg>`;
+const icon = name => `<svg class="i" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 
-// ---------- static data ----------
-const COMPANY_TYPES = {1:'Hair Salon',2:'Law Firm',3:'Flower Shop',4:'Car Dealership',5:'Clothing Store',6:'Gun Shop',7:'Game Shop',8:'Candle Shop',9:'Toy Shop',10:'Adult Novelties',11:'Cyber Cafe',12:'Grocery Store',13:'Theater',14:'Sweet Shop',15:'Cruise Line',16:'Television Network',18:'Zoo',19:'Firework Stand',20:'Property Broker',21:'Furniture Store',22:'Gas Station',23:'Music Store',24:'Nightclub',25:'Pub',26:'Gents Strip Club',27:'Restaurant',28:'Oil Rig',29:'Fitness Center',30:'Mechanic Shop',31:'Amusement Park',32:'Lingerie Store',33:'Meat Warehouse',34:'Farm',35:'Software Corporation',36:'Ladies Strip Club',37:'Private Security Firm',38:'Mining Corporation',39:'Detective Agency',40:'Logistics Management'};
-const CITY_JOBS = ['Army','Casino','Education','Grocer','Law','Medical'];
-const STATUSES = ['Okay','Hospital','Jail','Traveling','Abroad','Federal','Fallen'];
-const CAT_LABELS = { networth: 'Net worth', level: 'Level', rank: 'Rank', awards: 'Awards', workstats: 'Working stats', attacks: 'Attacks', defends: 'Defends', offences: 'Offences', revives: 'Revives', busts: 'Busts', traveltime: 'Travel time', racingskill: 'Racing skill', racingpoints: 'Racing points', racingwins: 'Racing wins' };
+// ---------- constants ----------
 const DEFAULT_RPM = 80;
 const FFS_API = 'https://ffscouter.com/api/v1';
-const FFS_BATCH = 205;          // FFScouter get-stats max targets per request
+const FFS_BATCH = 205;
+const CLOTHING_STORE = 5;                 // company type id; 7★ gives employees 75% mug protection
+const SALE_STATS = ['bazaarprofit', 'itemmarketrevenue', 'pointssold', 'auctionsells'];
+const MONEY_STATS = ['bazaarprofit', 'itemmarketrevenue'];
+const CHECK_STATS = [...SALE_STATS, 'bazaarsales', 'networth', 'criminaloffenses', 'moneymugged', 'defendslost', 'traveltimes'];  // 10 max
+const ATTACKABLE = new Set(['Okay']);
 
-// Rank-based estimate (same method as TornTools): rank = 1 + triggers from level, crimes, networth and battle stats.
-// Whatever rank isn't explained by level/crimes/networth tells us how many battle-stat triggers were hit.
+// Rank-based estimate (TornTools method): rank triggers not explained by level/crimes/networth come from battle stats.
 const RANK_NAMES = ['Absolute beginner','Beginner','Inexperienced','Rookie','Novice','Below average','Average','Reasonable','Above average','Competent','Highly competent','Veteran','Distinguished','Highly distinguished','Professional','Star','Master','Outstanding','Celebrity','Supreme','Idolized','Champion','Heroic','Legendary','Elite','Invincible'];
-const RANK_TRIGGERS = {
-  level: [2, 6, 11, 26, 31, 50, 71, 100],
-  crimes: [100, 5000, 10000, 20000, 30000, 50000],
-  networth: [5e6, 5e7, 5e8, 5e9, 5e10],
-};
+const RANK_TRIGGERS = { level: [2, 6, 11, 26, 31, 50, 71, 100], crimes: [100, 5000, 10000, 20000, 30000, 50000], networth: [5e6, 5e7, 5e8, 5e9, 5e10] };
 const STAT_BRACKETS = [
-  { label: 'under 2k', min: 0, max: 2e3 },
-  { label: '2k–25k', min: 2e3, max: 2.5e4 },
-  { label: '20k–250k', min: 2e4, max: 2.5e5 },
-  { label: '200k–2.5m', min: 2e5, max: 2.5e6 },
-  { label: '2m–25m', min: 2e6, max: 2.5e7 },
-  { label: '20m–250m', min: 2e7, max: 2.5e8 },
+  { label: 'under 2k', min: 0, max: 2e3 }, { label: '2k–25k', min: 2e3, max: 2.5e4 }, { label: '20k–250k', min: 2e4, max: 2.5e5 },
+  { label: '200k–2.5m', min: 2e5, max: 2.5e6 }, { label: '2m–25m', min: 2e6, max: 2.5e7 }, { label: '20m–250m', min: 2e7, max: 2.5e8 },
   { label: 'over 200m', min: 2e8, max: Infinity },
 ];
 
-// ---------- storage: localStorage for small settings, IndexedDB for bulk data ----------
+// ---------- storage ----------
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
@@ -670,36 +594,28 @@ const idb = {
     return this.db;
   },
   async get(k) {
-    try {
-      const db = await this.open();
-      return await new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
-    } catch { return undefined; }
+    try { const db = await this.open(); return await new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); }
+    catch { return undefined; }
   },
   async set(k, v) {
-    try {
-      const db = await this.open();
-      await new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); });
-      return true;
-    } catch { return false; }
+    try { const db = await this.open(); await new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); }); return true; }
+    catch { return false; }
   }
 };
 
 // ---------- state ----------
 let apiKey = store.get('tps_key', '') || '';
 let keyType = store.get('tps_key_type', '') || '';
-let running = false, stopFlag = false;
-const rows = new Map();                        // id -> row
-let profileCache = {};                         // id -> {t, d}   (IndexedDB)
-let ffCache = {};                              // id -> {t, ff, bs, human, src, upd}   (IndexedDB)
 let ffsKey = store.get('tps_ffs_key', '') || '';
-let watch = store.get('tps_watch', {});        // id -> {name, note, t}
-let hidden = store.get('tps_hidden', {});      // id -> name
-let factions = store.get('tps_factions', {});  // id -> {name, tag, t}
-let presets = store.get('tps_presets', {});    // name -> form
-let hiddenCols = new Set(store.get('tps_cols2', ['hofpos', 'property', 'donator']));
-let sortKey = 'networth', sortDir = -1;
-let lastCat = 'networth';
-let cursor = null;                             // where "Scan more" resumes: {cat, offset, lvlMin}
+let running = false, stopFlag = false;
+const rows = new Map();                      // id -> row
+let checks = {};                             // id -> {t, d}   raw check results (IndexedDB)
+let ffCache = {};                            // id -> {t, ff, bs, human, upd}   (IndexedDB)
+let watch = store.get('tps_watch', {});      // id -> {name, t}
+let hidden = store.get('tps_hidden', {});    // id -> name
+let sortKey = 'score', sortDir = -1;
+let cursor = null;                           // where "Find more" resumes
+let alerts = [];                             // newest first
 
 class StopError extends Error {}
 class FatalApiError extends Error {}
@@ -710,28 +626,30 @@ function log(msg, cls) {
   if (cls) d.className = cls;
   d.textContent = new Date().toLocaleTimeString() + '  ' + msg;
   $('log').prepend(d);
-  while ($('log').childNodes.length > 80) $('log').lastChild.remove();
+  while ($('log').childNodes.length > 100) $('log').lastChild.remove();
   if (cls === 'err') { setStatus(esc(msg)); toast(msg); }
 }
 function setStatus(html) { $('status').innerHTML = html; }
 function setProgress(frac) { $('progress').style.width = Math.max(0, Math.min(1, frac)) * 100 + '%'; }
 let toastTimer;
-function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600); }
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2800); }
 
-// ---------- rate limiter (sliding 60s window: never more than `budget` calls in ANY 60s span) ----------
+// ---------- rate limiter: never more than `budget` calls in ANY 60s window ----------
 const budget = () => Math.max(5, Math.min(100, Math.floor(+$('rpm').value) || DEFAULT_RPM));
 const limiter = {
-  stamps: [],
-  pauseUntil: 0,
+  stamps: [], pauseUntil: 0,
   used() { const now = Date.now(); this.stamps = this.stamps.filter(t => now - t < 60000); return this.stamps.length; },
-  async take() {
+  async take(bg) {
     for (;;) {
-      if (stopFlag) throw new StopError();
+      if (!bg && stopFlag) throw new StopError();
+      if (bg && !watching) throw new StopError();
       const now = Date.now();
       if (now >= this.pauseUntil && this.used() < budget()) { this.stamps.push(now); return; }
-      const wait = now < this.pauseUntil ? this.pauseUntil - now : 60000 - (now - this.stamps[0]) + 25;
-      setStatus(`Waiting <b>${Math.ceil(wait / 1000)}s</b> to stay under your API budget…`);
-      await sleep(Math.min(wait, 500));
+      if (!bg) {
+        const wait = now < this.pauseUntil ? this.pauseUntil - now : 60000 - (now - this.stamps[0]) + 25;
+        setStatus(`Waiting <b>${Math.ceil(wait / 1000)}s</b> to stay under your API budget…`);
+      }
+      await sleep(400);
     }
   }
 };
@@ -743,36 +661,26 @@ setInterval(() => {
   $('rateBar').style.background = u >= b ? 'var(--warn)' : 'var(--good)';
 }, 1000);
 
-// ---------- API ----------
-async function api(path, params = {}) {
+// ---------- Torn API ----------
+async function api(path, params = {}, bg = false) {
   if (!apiKey) throw new FatalApiError('Add your Torn API key in Settings first.');
   for (let attempt = 0; attempt < 4; attempt++) {
-    await limiter.take();
+    await limiter.take(bg);
     const q = new URLSearchParams({ ...params, key: apiKey, comment: COMMENT });
     let data;
-    try {
-      const res = await fetch(`${API}${path}?${q}`);
-      data = await res.json();
-    } catch (e) {
-      log(`Network error on ${path}: ${e.message}. Retrying…`, 'warn');
-      await sleep(2000 * (attempt + 1));
-      continue;
-    }
+    try { data = await (await fetch(`${API}${path}?${q}`)).json(); }
+    catch (e) { log(`Network error on ${path}: ${e.message}. Retrying…`, 'warn'); await sleep(2000 * (attempt + 1)); continue; }
     if (!data.error) return data;
     const { code, error } = data.error;
-    if ([2, 10, 13, 18].includes(code)) {        // bad/paused/disabled key: stop to avoid IP ban for repeated invalid-key calls
+    if ([2, 10, 13, 18].includes(code)) {        // bad/paused/disabled key: stop, repeated invalid-key calls risk an IP ban
       forgetKey();
       throw new FatalApiError(`Torn rejected your API key (${error}). It has been removed; add a working key in Settings.`);
     }
     if ([8, 9, 14].includes(code)) throw new FatalApiError(`Torn's API is unavailable right now (${error}).`);
     if (code === 16) throw new FatalApiError(`Your key's access level is too low (${error}).`);
-    if (code === 5) {                            // too many requests: back off a full minute
-      limiter.pauseUntil = Date.now() + 61000;
-      log('Torn says too many requests. Pausing 60s; other tools may be using your limit.', 'warn');
-      continue;
-    }
-    if (code === 17 || code === 0) { await sleep(3000); continue; } // backend/unknown: brief retry
-    return data; // other errors (e.g. 6 incorrect ID): caller handles
+    if (code === 5) { limiter.pauseUntil = Date.now() + 61000; log('Torn says too many requests. Pausing 60s; other tools may be using your limit.', 'warn'); continue; }
+    if (code === 17 || code === 0) { await sleep(3000); continue; }
+    return data;                                // e.g. 6 incorrect ID: caller handles
   }
   throw new Error(`Torn's API kept failing on ${path}. Try again in a minute.`);
 }
@@ -780,21 +688,16 @@ async function api(path, params = {}) {
 function forgetKey() {
   apiKey = ''; keyType = '';
   store.del('tps_key'); store.del('tps_key_type');
-  $('apiKey').value = '';
-  $('keyInfo').textContent = '';
+  $('apiKey').value = ''; $('keyInfo').textContent = '';
+  stopWatching();
   updateKeyBadge();
 }
-
 function updateKeyBadge() {
-  const b = $('keyBadge');
-  b.classList.toggle('ok', !!apiKey);
+  $('keyBadge').classList.toggle('ok', !!apiKey);
   $('keyBadgeText').textContent = apiKey ? `API key connected${keyType ? ' · ' + keyType : ''}` : 'Add API key';
 }
-
-// ---------- key handling ----------
 async function saveKey() {
-  const k = $('apiKey').value.trim();
-  const el = $('keyInfo');
+  const k = $('apiKey').value.trim(), el = $('keyInfo');
   if (!/^[A-Za-z0-9]{16}$/.test(k)) { el.className = 'keystate bad'; el.textContent = 'That doesn’t look like a key. Torn keys are 16 letters and numbers.'; return; }
   apiKey = k;
   if ($('rememberKey').checked) store.set('tps_key', k); else store.del('tps_key');
@@ -804,28 +707,20 @@ async function saveKey() {
     if (d.error) throw new Error(d.error.error);
     keyType = d.info.access.type;
     if ($('rememberKey').checked) store.set('tps_key_type', keyType);
-    if (/full|limited/i.test(keyType)) {
-      el.className = 'keystate bad';
-      el.textContent = `Connected (${keyType}). This tool only needs a Public key, so consider making a separate Public one for it.`;
-    } else {
-      el.className = 'keystate ok';
-      el.textContent = `Connected (${keyType}). You're ready to scan.`;
-    }
-  } catch (e) {
-    el.className = 'keystate bad';
-    el.textContent = e.message;
-  }
-  updateKeyBadge();
-  render();
+    el.className = /full|limited/i.test(keyType) ? 'keystate bad' : 'keystate ok';
+    el.textContent = /full|limited/i.test(keyType)
+      ? `Connected (${keyType}). This tool only needs a Public key, so consider making a separate Public one for it.`
+      : `Connected (${keyType}). You're ready to find targets.`;
+  } catch (e) { el.className = 'keystate bad'; el.textContent = e.message; }
+  updateKeyBadge(); render();
 }
 
-// ---------- parsing / formatting ----------
+// ---------- formatting ----------
 function parseMoney(s) {
   s = String(s || '').trim().toLowerCase().replace(/[$,\s]/g, '');
   if (!s) return null;
   const m = s.match(/^(\d*\.?\d+)([kmbt]?)$/);
-  if (!m) return null;
-  return +m[1] * ({ '': 1, k: 1e3, m: 1e6, b: 1e9, t: 1e12 })[m[2]];
+  return m ? +m[1] * ({ '': 1, k: 1e3, m: 1e6, b: 1e9, t: 1e12 })[m[2]] : null;
 }
 const numOrNull = id => { const v = $(id).value.trim(); return v === '' ? null : +v; };
 function fmtCompact(n) {
@@ -838,7 +733,6 @@ function fmtCompact(n) {
   return Number(n).toLocaleString();
 }
 const fmtMoney = n => n == null ? '' : '$' + fmtCompact(n);
-const fmtStat = fmtCompact;
 function fmtAgo(ts) {
   if (!ts) return '';
   const s = Date.now() / 1000 - ts;
@@ -848,300 +742,275 @@ function fmtAgo(ts) {
   if (s < 86400 * 365) return Math.floor(s / 86400) + 'd ago';
   return (s / 86400 / 365).toFixed(1) + 'y ago';
 }
+function fmtIn(ts) {
+  const s = ts - Date.now() / 1000;
+  if (s <= 0) return 'now';
+  if (s < 3600) return Math.ceil(s / 60) + 'm';
+  return Math.floor(s / 3600) + 'h ' + Math.ceil((s % 3600) / 60) + 'm';
+}
 const fmtDate = ts => ts ? new Date(ts * 1000).toLocaleString() : '';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-function decodeEntities(s) { const t = document.createElement('textarea'); t.innerHTML = s; return t.value; }
 const plural = (n, w) => `${n.toLocaleString()} ${w}${n === 1 ? '' : 's'}`;
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const dayStart = () => Math.floor(Date.now() / 86400000) * 86400;   // today 00:00 UTC (Torn time)
+const soldLabel = d => d === 0 ? 'Today' : d === 1 ? 'Yesterday' : `${d}d ago`;
 
-// ---------- data model ----------
-function upsertHof(h, cat) {
-  let r = rows.get(h.id);
-  if (!r) { r = { id: h.id, hof: {} }; rows.set(h.id, r); applyCached(r); }
-  delete r.stub;
-  r.name = h.username;
-  r.level = h.level;
-  r.faction_id = h.faction_id || 0;
-  r.last_action = Math.max(h.last_action || 0, r.last_action || 0);
-  r.age = h.age_in_days;
-  r.signed_up = h.signed_up;
-  r.rank = h.rank_name;
-  if (h.rank_number) r.rankNum = h.rank_number;
-  if (h.criminal_offenses != null) r.crimes = h.criminal_offenses;   // only the Level HoF includes this
-  r.hof[cat] = { value: h.value, pos: h.position };
-  if (cat === 'networth') r.networth = h.value;
+// ---------- rows ----------
+function getRow(id) {
+  let r = rows.get(id);
+  if (!r) { r = { id }; rows.set(id, r); applyCached(r); }
   return r;
 }
-
-function applyEnriched(r, d) {
-  const p = d.profile || {};
-  r.enriched = true;
-  if (p.name) r.name = p.name;
-  if (p.level) r.level = p.level;
-  if (p.age != null) r.age = p.age;
-  if (p.signed_up) r.signed_up = p.signed_up;
-  r.faction_id = p.faction_id || 0;
-  if (p.last_action) { r.last_action = Math.max(p.last_action.timestamp, r.last_action || 0); r.online = p.last_action.status; }
-  r.status = p.status ? p.status.state : null;
-  r.statusDesc = p.status ? p.status.description : '';
-  r.donator = p.donator_status || null;
-  r.property = p.property ? p.property.name : '';
-  r.rank = p.rank || r.rank;
-  const rn = RANK_NAMES.indexOf(p.rank);
-  if (rn >= 0) r.rankNum = rn + 1;
-  const j = d.job;
-  r.companyId = null;
-  if (!j) { r.jobKey = 'none'; r.jobLabel = 'Unemployed'; r.position = ''; r.stars = null; r.company = ''; }
-  else if (j.type === 'company') {
-    r.jobKey = 'c' + j.type_id;
-    r.jobLabel = COMPANY_TYPES[j.type_id] || ('Company type ' + j.type_id);
-    r.company = decodeEntities(j.name || '');
-    r.companyId = j.id;
-    r.position = j.position;
-    r.stars = j.rating;
-  } else {
-    r.jobKey = 'j' + j.name;
-    r.jobLabel = j.name;
-    r.company = 'City job';
-    r.position = j.position;
-    r.stars = null;
-  }
-  const nw = (d.personalstats || []).find(s => s.name === 'networth');
-  if (nw && !r.hof.networth) r.networth = nw.value;   // HoF networth is fresher when we have it
-  const cr = (d.personalstats || []).find(s => s.name === 'criminaloffenses');
-  if (cr) r.crimes = cr.value;
-  if (watch[r.id] && r.name) watch[r.id].name = r.name;
-}
-
 function applyCached(r) {
-  const c = profileCache[r.id];
-  if (c && c.d) applyEnriched(r, c.d);
+  const c = checks[r.id]; if (c) applyCheck(r, c.d, c.t);
   if (ffCache[r.id]) r.ffs = ffCache[r.id];
 }
 
-// Index into STAT_BRACKETS, or null when we can't tell.
+// Source rows carry different fields; merge what each gives.
+function fromHof(h) {
+  const r = getRow(h.id); delete r.stub;
+  Object.assign(r, { name: h.username, level: h.level, faction_id: h.faction_id || 0, rankNum: h.rank_number || r.rankNum });
+  r.lastAction = Math.max(h.last_action || 0, r.lastAction || 0);
+  if (h.criminal_offenses != null) r.crimes = h.criminal_offenses;
+  return r;
+}
+function fromSearch(u) {
+  const r = getRow(u.id); delete r.stub;
+  Object.assign(r, { name: u.name, level: u.level, faction_id: u.faction_id || 0, online: u.online });
+  for (const ic of u.icons || []) {
+    if (ic.id === 35) r.hasBazaar = true;
+    if ((ic.id === 27 || ic.id === 73) && /\(Clothing Store\)/.test(ic.description || '')) r.clothingHint = true;
+  }
+  return r;
+}
+function fromMember(m) {
+  const r = getRow(m.id); delete r.stub;
+  Object.assign(r, { name: m.name, level: m.level, online: m.last_action?.status, lastAction: m.last_action?.timestamp || r.lastAction });
+  if (m.status) Object.assign(r, { state: m.status.state, stateDesc: m.status.description, until: m.status.until });
+  return r;
+}
+function fromBazaarList(b, metric, value) {
+  const r = getRow(b.id); delete r.stub;
+  r.bazaarName = b.name;
+  if (!r.name) r.name = null;
+  r.hasBazaar = true;
+  r.bzListedOpen = b.is_open;
+  if (metric === 'weekly_income') r.bzWeeklyIncome = value;
+  if (metric === 'weekly_customers') r.bzWeeklyCustomers = value;
+  return r;
+}
+
+// A full check: one call for profile + job + bazaar + dated trading stats, plus one more for weekly
+// sales amounts only when they sold something in the last week.
+function applyCheck(r, d, t) {
+  const p = d.profile || {};
+  delete r.stub;
+  r.checkedAt = t;
+  Object.assign(r, { name: p.name ?? r.name, level: p.level ?? r.level, faction_id: p.faction_id || 0, age: p.age });
+  if (p.last_action) { r.lastAction = Math.max(p.last_action.timestamp || 0, r.lastAction || 0); r.online = p.last_action.status; }
+  if (p.status) Object.assign(r, { state: p.status.state, stateDesc: p.status.description, until: p.status.until });
+  const rn = RANK_NAMES.indexOf(p.rank); if (rn >= 0) r.rankNum = rn + 1;
+  const j = d.job;
+  r.clothing = !!(j && j.type === 'company' && j.type_id === CLOTHING_STORE);
+  r.clothingStars = r.clothing ? j.rating : null;
+  r.bzExists = !!d.bazaar_exists;
+  r.bzOpen = !!d.bazaar_is_open;
+  r.bzItems = (d.bazaar || []).length;
+  r.bzValue = (d.bazaar || []).reduce((s, it) => s + (it.price || 0) * (it.quantity || 0), 0);
+  r.hasBazaar = r.bzItems > 0;
+  const stats = Object.fromEntries((d.personalstats || []).map(s => [s.name, s]));
+  r.networth = stats.networth?.value ?? r.networth;
+  r.crimes = stats.criminaloffenses?.value ?? r.crimes;
+  r.moneyMugged = stats.moneymugged?.value;
+  r.defendsLost = stats.defendslost?.value;
+  const saleTs = Math.max(0, ...SALE_STATS.map(n => stats[n]?.value ? stats[n].timestamp || 0 : 0));
+  r.saleDays = saleTs ? Math.max(0, Math.floor((dayStart() - saleTs) / 86400)) : null;
+  r.sales7d = d.sales7d ?? (r.saleDays != null && r.saleDays > 7 ? 0 : null);
+  if (watch[r.id] && r.name) watch[r.id].name = r.name;
+}
+
 function rankEstimate(r) {
   if (!r.rankNum || r.level == null || r.crimes == null || r.networth == null) return null;
-  if (r.last_action && new Date(r.last_action * 1000).getUTCFullYear() <= 2015) return null;  // pre-2016 rank system
-  const t = RANK_TRIGGERS.level.filter(x => x <= r.level).length
-          + RANK_TRIGGERS.crimes.filter(x => x <= r.crimes).length
-          + RANK_TRIGGERS.networth.filter(x => x <= r.networth).length;
+  if (r.lastAction && new Date(r.lastAction * 1000).getUTCFullYear() <= 2015) return null;
+  const t = RANK_TRIGGERS.level.filter(x => x <= r.level).length + RANK_TRIGGERS.crimes.filter(x => x <= r.crimes).length + RANK_TRIGGERS.networth.filter(x => x <= r.networth).length;
   const i = r.rankNum - t - 1;
   return i >= 0 && i < STAT_BRACKETS.length ? i : null;
 }
-
-// Best available estimate: FFScouter point value if we have it, else the rank bracket.
 function statRange(r) {
-  if (r.ffs && r.ffs.bs != null) return { min: r.ffs.bs, max: r.ffs.bs, sort: r.ffs.bs, src: 'ffs' };
+  if (r.ffs && r.ffs.bs != null) return { min: r.ffs.bs, max: r.ffs.bs, src: 'ffs', label: r.ffs.human || fmtCompact(r.ffs.bs) };
   const i = rankEstimate(r);
   if (i == null) return null;
   const b = STAT_BRACKETS[i];
-  return { min: b.min, max: b.max, sort: b.min + 1, src: 'rank', label: b.label };
+  return { min: b.min, max: b.max, src: 'rank', label: '~' + b.label };
 }
 
-function cacheFresh(id) {
-  const c = profileCache[id];
-  const hrs = +$('cacheHours').value || 0;
-  return c && (Date.now() - c.t) < hrs * 3600e3;
-}
-const ffsFresh = id => ffCache[id] && Date.now() - ffCache[id].t < 12 * 3600e3;
-
-async function saveCache() {
-  const ids = Object.keys(profileCache);
-  if (ids.length > 20000) {
-    ids.sort((a, b) => profileCache[a].t - profileCache[b].t).slice(0, ids.length - 20000).forEach(id => delete profileCache[id]);
+// Can I win? Fair Fight = 1 + 8/3 × (their stats / mine), capped at 3.
+function winChance(r) {
+  const ff = r.ffs?.ff;
+  if (ff != null) {
+    if (ff < 1.7) return { f: 1, label: 'Easy' };
+    if (ff < 2.35) return { f: 0.9, label: 'Likely' };
+    if (ff < 2.95) return { f: 0.55, label: 'Risky' };
+    return { f: 0.25, label: 'Unlikely' };
   }
-  if (!(await idb.set('cache', profileCache)) && !saveCache.warned) {
-    saveCache.warned = true;
-    log('Your browser is blocking storage, so looked-up details will only last until you close this tab.', 'warn');
+  const mine = parseMoney($('myStats').value), s = statRange(r);
+  if (mine && s) {
+    const ratio = s.max / mine;
+    if (ratio < 0.25) return { f: 1, label: 'Easy' };
+    if (ratio < 0.5) return { f: 0.9, label: 'Likely' };
+    if (ratio < 1) return { f: 0.55, label: 'Risky' };
+    return { f: 0.25, label: 'Unlikely' };
   }
+  return { f: 0.6, label: 'Unknown' };
 }
 
-async function saveRows() {
-  await idb.set('rows', [...rows.values()].slice(-15000));
-  await idb.set('meta', { lastCat, cursor });
-}
-
-// Make sure every watchlisted player has a row, so the watchlist view works even for players not scanned yet.
-function ensureWatchRows() {
-  for (const id of Object.keys(watch)) {
-    const n = +id;
-    if (!rows.has(n)) { const r = { id: n, name: watch[id].name || String(n), hof: {}, stub: true }; rows.set(n, r); applyCached(r); }
+// Mug score 0–100: how likely they're holding fresh cash × how likely you win.
+function mugScore(r) {
+  if (!r.checkedAt) return null;
+  const why = [];
+  const d = r.saleDays;
+  const rec = d == null ? 0.03 : d === 0 ? 1 : d === 1 ? 0.8 : d <= 3 ? 0.5 : d <= 7 ? 0.25 : 0.05;
+  why.push(d == null ? 'No recorded sales' : `Last sale ${soldLabel(d).toLowerCase()}`);
+  const amt = r.sales7d;
+  const amtF = amt ? clamp((Math.log10(amt) - 5) / 5, 0.05, 1) : 0.15;   // $100k → 0, $10b → 1
+  if (amt) why.push(`${fmtMoney(amt)} in sales this week`);
+  let cash = rec * (0.35 + 0.65 * amtF);
+  if (r.bzOpen && r.bzValue > 0) {
+    cash = Math.min(1, cash + 0.08 + 0.12 * clamp((Math.log10(r.bzValue) - 6) / 4, 0, 1));
+    why.push(`Bazaar open, ${fmtMoney(r.bzValue)} listed`);
   }
+  const mins = r.lastAction ? (Date.now() / 1000 - r.lastAction) / 60 : null;
+  const idle = r.online === 'Online' ? 0.75 : mins == null ? 0.9 : mins < 2880 ? 1 : mins < 10080 ? 0.6 : 0.3;
+  why.push(r.online === 'Online' ? 'Online now (may bank soon)' : mins != null ? `Last active ${fmtAgo(r.lastAction)}` : '');
+  const prot = r.clothing && r.clothingStars >= 7 ? 0.25 : 1;
+  if (prot < 1) why.push('7★ Clothing Store: 75% mug protection');
+  const w = winChance(r);
+  why.push(`Fight: ${w.label.toLowerCase()}${r.ffs?.ff != null ? ` (FF ${r.ffs.ff.toFixed(2)})` : ''}`);
+  return { score: Math.round(100 * cash * idle * prot * w.f), why: why.filter(Boolean) };
 }
 
-function saveWatch() {
-  store.set('tps_watch', watch);
-  $('watchCount').textContent = Object.keys(watch).length;
-}
-function saveHidden() {
-  store.set('tps_hidden', hidden);
-  $('hiddenCount').textContent = Object.keys(hidden).length;
-}
+const isCheckFresh = id => { const c = checks[id]; return c && Date.now() - c.t < (+$('checkTtl').value || 30) * 60000; };
+const ffsFresh = id => ffCache[id] && Date.now() - ffCache[id].t < 6 * 3600e3;
 
 // ---------- filters ----------
-function viewFilter() {
-  const v = $('fView').value;
-  if (v === 'watch') return r => !!watch[r.id];
-  if (v === 'hidden') return r => !!hidden[r.id];
-  return r => !hidden[r.id] && !r.stub;
-}
-
-function baseFilter() {
-  const f = {
-    lvlMin: numOrNull('fLvlMin'), lvlMax: numOrNull('fLvlMax'),
-    laMin: numOrNull('fLaMin'), laMax: numOrNull('fLaMax'), laUnit: +$('fLaUnit').value,
-    ageMin: numOrNull('fAgeMin'), ageMax: numOrNull('fAgeMax'),
-    faction: $('fFaction').value, factionId: numOrNull('fFactionId'),
-    name: $('fName').value.trim().toLowerCase(),
-    nwMin: parseMoney($('fNwMin').value), nwMax: parseMoney($('fNwMax').value),
-  };
-  const view = viewFilter();
-  const now = Date.now() / 1000;
-  return r => {
-    if (!view(r)) return false;
-    if (f.lvlMin != null && r.level < f.lvlMin) return false;
-    if (f.lvlMax != null && r.level > f.lvlMax) return false;
-    if (r.last_action) {
-      const since = (now - r.last_action) / f.laUnit;
-      if (f.laMin != null && since < f.laMin) return false;
-      if (f.laMax != null && since > f.laMax) return false;
-    }
-    if (f.ageMin != null && r.age < f.ageMin) return false;
-    if (f.ageMax != null && r.age > f.ageMax) return false;
-    if (f.faction === 'none' && r.faction_id) return false;
-    if (f.faction === 'in' && !r.faction_id) return false;
-    if (f.faction === 'id' && f.factionId != null && r.faction_id !== f.factionId) return false;
-    if (f.name && !String(r.name).toLowerCase().includes(f.name)) return false;
-    // networth: only filter when known; unknown networth is resolved by lookup
-    if ((f.nwMin != null || f.nwMax != null) && r.networth != null) {
-      if (f.nwMin != null && r.networth < f.nwMin) return false;
-      if (f.nwMax != null && r.networth > f.nwMax) return false;
-    }
-    return true;
+function readFilters() {
+  return {
+    view: $('fView').value,
+    ffMax: numOrNull('fFfMax'), bsMax: parseMoney($('fBsMax').value), knownOnly: $('fKnownOnly').checked,
+    soldWithin: $('fSoldWithin').value === '' ? null : +$('fSoldWithin').value,
+    salesMin: parseMoney($('fSalesMin').value), bazaarOpen: $('fBazaarOpen').checked,
+    lvlMin: numOrNull('fLvlMin'), lvlMax: numOrNull('fLvlMax'), active: $('fActive').value,
+    attackable: $('fAttackable').checked, noClothing: $('fNoClothing').checked, noFaction: $('fNoFaction').checked,
   };
 }
-
-// optimistic = true: data a detail lookup would fill in (job, status, networth, rank estimate) counts as
-// "could still match", so we can pick who to look up. Fair Fight only comes from FFScouter, so it stays strict.
-function detailFilter(optimistic = false) {
-  const f = {
-    jobs: new Set([...$('fJob').selectedOptions].map(o => o.value)), pos: $('fPos').value.trim().toLowerCase(),
-    stars: numOrNull('fStars'), statuses: new Set([...document.querySelectorAll('#fStatus input:checked')].map(i => i.value)),
-    donator: $('fDonator').value, prop: $('fProp').value.trim().toLowerCase(),
-    nwSet: parseMoney($('fNwMin').value) != null || parseMoney($('fNwMax').value) != null,
-    bsMin: parseMoney($('fBsMin').value), bsMax: parseMoney($('fBsMax').value),
-    ffMin: numOrNull('fFfMin'), ffMax: numOrNull('fFfMax'),
-  };
-  const active = f.jobs.size || f.pos || f.stars != null || f.statuses.size || f.donator || f.prop;
-  const statsSet = f.bsMin != null || f.bsMax != null;
-  const ffSet = f.ffMin != null || f.ffMax != null;
-  const fn = r => {
-    const unknownOk = optimistic && !r.enriched;
-    if (f.nwSet && r.networth == null && !unknownOk) return false;     // networth filter needs a known value
-    if (statsSet) {                                      // keep players whose estimate overlaps the range
-      const s = statRange(r);
-      if (!s && unknownOk) { /* lookup may give a rank estimate */ }
-      else if (!s) return false;
-      else {
-        if (f.bsMin != null && s.max < f.bsMin) return false;
-        if (f.bsMax != null && s.min > f.bsMax) return false;
-      }
-    }
-    if (ffSet) {
-      const ff = r.ffs ? r.ffs.ff : null;
-      if (ff == null) return false;
-      if (f.ffMin != null && ff < f.ffMin) return false;
-      if (f.ffMax != null && ff > f.ffMax) return false;
-    }
-    if (!active) return true;
-    if (!r.enriched) return optimistic;
-    if (f.jobs.size && !f.jobs.has(r.jobKey)) return false;
-    if (f.pos && !String(r.position || '').toLowerCase().includes(f.pos)) return false;
-    if (f.stars != null && (r.stars == null || r.stars < f.stars)) return false;
-    if (f.statuses.size && !f.statuses.has(r.status)) return false;
-    if (f.donator === 'yes' && !r.donator) return false;
-    if (f.donator === 'no' && r.donator) return false;
-    if (f.prop && !String(r.property || '').toLowerCase().includes(f.prop)) return false;
-    return true;
-  };
-  fn.active = active || f.nwSet || statsSet || ffSet;
-  return fn;
+// optimistic: a not-yet-checked player "could match" anything a check would reveal (used to pick who to check).
+function matches(r, f, optimistic = false) {
+  if (f.view === 'watch' ? !watch[r.id] : f.view === 'hidden' ? !hidden[r.id] : (hidden[r.id] || r.stub)) return false;
+  const unknown = !r.checkedAt;
+  const may = unknown && optimistic;
+  if (f.lvlMin != null && r.level != null && r.level < f.lvlMin) return false;
+  if (f.lvlMax != null && r.level != null && r.level > f.lvlMax) return false;
+  if (f.noFaction && r.faction_id) return false;
+  if (f.active) {
+    const mins = r.lastAction ? (Date.now() / 1000 - r.lastAction) / 60 : null;
+    if (f.active === 'online' && r.online && r.online !== 'Online') return false;
+    if (f.active === 'notOnline' && r.online === 'Online') return false;
+    if (/^\d+$/.test(f.active) && mins != null && mins > +f.active * 1440) return false;
+  }
+  if (f.attackable && r.state && !ATTACKABLE.has(r.state) && !(optimistic && !isCheckFresh(r.id))) return false;
+  if (f.noClothing && (r.clothing ? r.clothingStars >= 7 : false)) return false;
+  // strength
+  const ff = r.ffs?.ff;
+  if (f.ffMax != null && ff != null && ff > f.ffMax) return false;
+  const s = statRange(r);
+  if (f.bsMax != null && s && s.min > f.bsMax) return false;
+  if (f.knownOnly && ff == null && !s && !may) return false;
+  // cash (needs a check)
+  const cashSet = f.soldWithin != null || f.salesMin != null || f.bazaarOpen;
+  if (cashSet && unknown) return may;
+  if (f.soldWithin != null && (r.saleDays == null || r.saleDays > f.soldWithin)) return false;
+  if (f.salesMin != null && !(r.sales7d >= f.salesMin)) return false;
+  if (f.bazaarOpen && !(r.bzOpen && r.bzItems > 0)) return false;
+  return true;
 }
-
-// Players the "Look up details" button would fetch right now: everyone who matches (or could match,
-// once their details are known) the current filters and doesn't have fresh details yet.
-function lookupCandidates() {
-  const b = baseFilter(), d = detailFilter(true);
-  const out = [];
-  for (const r of rows.values()) if (!cacheFresh(r.id) && b(r) && d(r)) out.push(r);
-  return out;
+function visibleRows() { const f = readFilters(); return [...rows.values()].filter(r => matches(r, f)); }
+function checkCandidates() {
+  const f = readFilters(), out = [];
+  for (const r of rows.values()) if (!isCheckFresh(r.id) && matches(r, f, true)) out.push(r);
+  // check the most promising first: known bazaar owners, then active, then the rest
+  const pri = r => (r.hasBazaar ? 2 : 0) + (r.bzWeeklyIncome ? 2 : 0) + (r.online && r.online !== 'Offline' ? 1 : 0);
+  return out.sort((a, b) => pri(b) - pri(a));
 }
 function ffsCandidates() {
-  const b = baseFilter();
-  const out = [];
-  for (const r of rows.values()) if (b(r) && !ffsFresh(r.id)) out.push(r.id);
+  const f = readFilters(), out = [];
+  for (const r of rows.values()) if (!ffsFresh(r.id) && matches(r, f, true)) out.push(r.id);
   return out;
-}
-function factionCandidates() {
-  const fresh = id => factions[id] && Date.now() - factions[id].t < 7 * 864e5;
-  return [...new Set(visibleRows().map(r => r.faction_id).filter(id => id && !fresh(id)))];
 }
 
 // ---------- table ----------
 const profileUrl = id => `https://www.torn.com/profiles.php?XID=${id}`;
+const attackUrl = id => `https://www.torn.com/loader.php?sid=attack&user2ID=${id}`;
+const bazaarUrl = id => `https://www.torn.com/bazaar.php?userId=${id}`;
 const iconBtn = (act, name, label, on) => `<button type="button" class="icon-btn${on ? ' on' : ''}" data-act="${act}" aria-label="${esc(label)}" title="${esc(label)}">${icon(name)}</button>`;
-const iconLink = (href, name, label) => `<a href="${href}" target="_blank" rel="noopener" aria-label="${esc(label)}" title="${esc(label)}">${icon(name)}</a>`;
-const COLS = [
-  { key: 'act', label: 'Actions', srOnly: true, nosort: true, fixed: true, cls: 'acts', render: r =>
-      `<div class="acts-wrap">` +
-      iconBtn('watch', 'star', watch[r.id] ? `Remove ${r.name} from watchlist` : `Watch ${r.name}`, !!watch[r.id]) +
-      iconBtn('note', 'note', `Note on ${r.name}`) +
-      iconBtn('hide', hidden[r.id] ? 'show' : 'hide', hidden[r.id] ? `Show ${r.name} again` : `Hide ${r.name}`) +
-      `</div>` },
-  { key: 'name', label: 'Player', fixed: true, cls: 'player', render: r => `<a href="${profileUrl(r.id)}" target="_blank" rel="noopener">${esc(r.name)}</a><span class="id">${r.id}</span>` },
-  { key: 'level', label: 'Level', num: true },
-  { key: 'bs', label: 'Est. stats', num: true, get: r => statRange(r)?.sort ?? null, render: r => {
-      const s = statRange(r);
-      if (!s) return '<span class="muted">–</span>';
-      if (s.src === 'ffs') return `<span title="FFScouter estimate${r.ffs.upd ? ', updated ' + esc(fmtDate(r.ffs.upd)) : ''}">${esc(r.ffs.human || fmtStat(r.ffs.bs))}</span>`;
-      return `<span class="est-rank" title="Rough range worked out from rank. Can be off for a week after a net worth change.">~${esc(s.label)}</span>`;
-    } },
-  { key: 'ff', label: 'Fair Fight', num: true, get: r => r.ffs?.ff ?? null, render: r => r.ffs?.ff != null ? r.ffs.ff.toFixed(2) : '' },
-  { key: 'last_action', label: 'Last active', get: r => r.last_action ? -r.last_action : null, render: r => r.last_action ? `<span class="online" title="${esc(fmtDate(r.last_action))}">${r.online ? `<span class="dot ${r.online}" aria-hidden="true"></span>` : ''}${fmtAgo(r.last_action)}${r.online === 'Online' ? '<span class="sr-only"> (online)</span>' : ''}</span>` : '' },
-  { key: 'networth', label: 'Net worth', num: true, render: r => r.networth == null ? '<span class="muted">–</span>' : fmtMoney(r.networth) },
-  { key: 'hofval', label: 'HoF value', num: true, get: r => r.hof[lastCat] ? r.hof[lastCat].value : null, render: r => r.hof[lastCat] ? fmtCompact(r.hof[lastCat].value) : '' },
-  { key: 'hofpos', label: 'HoF rank', num: true, get: r => r.hof[lastCat] ? r.hof[lastCat].pos : null, render: r => r.hof[lastCat] ? '#' + r.hof[lastCat].pos.toLocaleString() : '' },
-  { key: 'age', label: 'Account age', num: true, render: r => r.age == null ? '' : `<span title="Signed up ${esc(fmtDate(r.signed_up))}">${r.age.toLocaleString()}d</span>` },
-  { key: 'jobLabel', label: 'Job', render: r => r.enriched ? esc(r.jobLabel) : '<span class="muted">–</span>' },
-  { key: 'position', label: 'Position', render: r => esc(r.position || '') },
-  { key: 'stars', label: 'Stars', num: true, render: r => r.stars == null ? '' : `${r.stars}★` },
-  { key: 'company', label: 'Company', render: r => r.companyId ? `<a href="https://www.torn.com/joblist.php#/p=corpinfo&ID=${r.companyId}" target="_blank" rel="noopener">${esc(r.company)}</a>` : esc(r.company || '') },
-  { key: 'faction', label: 'Faction', get: r => r.faction_id ? (factions[r.faction_id] ? factions[r.faction_id].name : 'zz' + r.faction_id) : null, render: r => {
-      if (!r.faction_id) return '<span class="muted">None</span>';
-      const f = factions[r.faction_id];
-      return `<a href="https://www.torn.com/factions.php?step=profile&ID=${r.faction_id}" target="_blank" rel="noopener">${f ? esc(f.tag ? `[${f.tag}] ${f.name}` : f.name) : '#' + r.faction_id}</a>`;
-    } },
-  { key: 'status', label: 'Status', render: r => r.status ? `<span class="st-${esc(r.status)}" title="${esc(r.statusDesc)}">${esc(r.status)}</span>` : '' },
-  { key: 'donator', label: 'Donator', render: r => r.donator ? `<span class="tag">${esc(r.donator)}</span>` : '' },
-  { key: 'property', label: 'Property', render: r => esc(r.property || '') },
-  { key: 'note', label: 'Note', cls: 'note', get: r => watch[r.id]?.note || null, render: r => { const n = watch[r.id]?.note; return n ? `<span title="${esc(n)}">${esc(n)}</span>` : ''; } },
-  { key: 'links', label: 'Open in Torn', nosort: true, render: r => `<div class="links">` +
-      iconLink(`https://www.torn.com/loader.php?sid=attack&user2ID=${r.id}`, 'attack', `Attack ${r.name}`) +
-      iconLink(`https://www.torn.com/messages.php#/p=compose&XID=${r.id}`, 'mail', `Message ${r.name}`) +
-      iconLink(`https://www.torn.com/trade.php#step=start&userID=${r.id}`, 'trade', `Trade with ${r.name}`) +
-      iconLink(`https://www.torn.com/bazaar.php?userId=${r.id}`, 'bag', `${r.name}'s bazaar`) +
-      iconLink(`https://www.torn.com/friendlist.php#/p=add&XID=${r.id}`, 'friend', `Add ${r.name} as friend`) + `</div>` },
-];
+const displayName = r => r.name || (r.bazaarName ? `“${r.bazaarName}”` : `#${r.id}`);
 
+function statusCell(r) {
+  if (!r.state) return r.checkedAt ? '' : '<span class="muted">–</span>';
+  const extra = (r.state === 'Hospital' || r.state === 'Jail') && r.until ? ` · out in ${fmtIn(r.until)}` : '';
+  const txt = r.state === 'Traveling' || r.state === 'Abroad' ? r.stateDesc || r.state : r.state + extra;
+  return `<span class="st-${esc(r.state)}" title="${esc(r.stateDesc || '')}">${esc(txt)}</span>`;
+}
+const COLS = [
+  { key: 'act', label: 'Watch or hide', srOnly: true, nosort: true, cls: 'acts', render: r => `<div class="acts-wrap">` +
+      iconBtn('watch', 'star', watch[r.id] ? `Stop watching ${displayName(r)}` : `Watch ${displayName(r)}`, !!watch[r.id]) +
+      iconBtn('hide', hidden[r.id] ? 'show' : 'hide', hidden[r.id] ? `Show ${displayName(r)} again` : `Hide ${displayName(r)}`) + `</div>` },
+  { key: 'score', label: 'Mug score', get: r => mugScore(r)?.score ?? null, render: r => {
+      const m = mugScore(r);
+      if (!m) return '<span class="muted">Not checked</span>';
+      return `<div class="score" title="${esc(m.why.join('\n'))}"><b>${m.score}</b><div class="meter" aria-hidden="true"><div style="width:${m.score}%"></div></div></div>`;
+    } },
+  { key: 'name', label: 'Player', cls: 'player', get: r => (r.name || r.bazaarName || '').toLowerCase(), render: r => {
+      const prot = r.clothing && r.clothingStars >= 7 ? '<span class="tag bad" title="Works at a 7★ Clothing Store: takes 75% less from mugs">Mug-protected</span>' : '';
+      const sub = !r.name && r.bazaarName ? `<span class="sub">Bazaar name. Check to see the player.</span>` : r.bazaarName ? `<span class="sub">${esc(r.bazaarName)}</span>` : '';
+      return `<a href="${profileUrl(r.id)}" target="_blank" rel="noopener">${esc(displayName(r))}</a><span class="id">${r.id}</span>${prot}${sub}`;
+    } },
+  { key: 'level', label: 'Level', num: true },
+  { key: 'win', label: 'Can I win?', get: r => r.ffs?.ff ?? (statRange(r)?.min ?? null), render: r => {
+      const w = winChance(r), s = statRange(r);
+      const ff = r.ffs?.ff != null ? `FF ${r.ffs.ff.toFixed(2)}` : '';
+      const detail = [ff, s ? s.label : ''].filter(Boolean).join(' · ');
+      return `<div class="two-line"><span class="win-${w.label}">${w.label}</span><small>${esc(detail || 'Get Fair Fight to know')}</small></div>`;
+    } },
+  { key: 'sales', label: 'Recent sales', get: r => r.checkedAt ? (r.saleDays == null ? -1 : (8 - Math.min(r.saleDays, 8)) * 1e13 + (r.sales7d || 0)) : null, render: r => {
+      if (!r.checkedAt) return '<span class="muted">–</span>';
+      if (r.saleDays == null) return '<span class="muted">None recorded</span>';
+      const hot = r.saleDays <= 1 ? ' class="hot"' : '';
+      return `<div class="two-line"><span${hot}>${soldLabel(r.saleDays)}</span><small>${r.sales7d ? fmtMoney(r.sales7d) + ' this week' : r.saleDays > 7 ? 'nothing this week' : 'points or auctions'}</small></div>`;
+    } },
+  { key: 'bazaar', label: 'Bazaar', get: r => r.bzOpen ? (r.bzValue || 1) : r.bzWeeklyIncome ? r.bzWeeklyIncome / 1e3 : r.hasBazaar ? 0 : null, render: r => {
+      if (r.checkedAt) {
+        if (!r.bzItems) return '<span class="muted">Empty</span>';
+        return `<div class="two-line"><span>${r.bzOpen ? 'Open' : 'Closed'}</span><small>${fmtMoney(r.bzValue)} listed</small></div>`;
+      }
+      if (r.bzWeeklyIncome) return `<div class="two-line"><span>${r.bzListedOpen ? 'Open' : 'Closed'}</span><small>${fmtMoney(r.bzWeeklyIncome)} this week</small></div>`;
+      if (r.bzWeeklyCustomers) return `<div class="two-line"><span>${r.bzListedOpen ? 'Open' : 'Closed'}</span><small>${r.bzWeeklyCustomers.toLocaleString()} buyers this week</small></div>`;
+      return r.hasBazaar ? 'Has items' : '<span class="muted">–</span>';
+    } },
+  { key: 'active', label: 'Last active', get: r => r.online === 'Online' ? -1 : r.lastAction ? -r.lastAction : null, render: r => {
+      const dot = r.online ? `<span class="dot ${r.online}" aria-hidden="true"></span>` : '';
+      const txt = r.lastAction ? fmtAgo(r.lastAction) : r.online || '';
+      return txt ? `<span class="online" title="${esc(fmtDate(r.lastAction))}">${dot}${esc(txt)}${r.online ? `<span class="sr-only"> (${r.online})</span>` : ''}</span>` : '<span class="muted">–</span>';
+    } },
+  { key: 'state', label: 'Status', render: statusCell },
+  { key: 'go', label: 'Attack', nosort: true, render: r => `<div class="row-actions">` +
+      `<a class="btn small primary" href="${attackUrl(r.id)}" target="_blank" rel="noopener" aria-label="Attack ${esc(displayName(r))}">${icon('attack')}Attack</a>` +
+      (r.hasBazaar || r.bzItems ? `<a class="icon" href="${bazaarUrl(r.id)}" target="_blank" rel="noopener" aria-label="Open ${esc(displayName(r))}'s bazaar" title="Open bazaar (buy something, then mug)">${icon('bag')}</a>` : '') + `</div>` },
+];
 const colValue = (c, r) => c.get ? c.get(r) : r[c.key];
-// "HoF value" duplicates Net worth / Level when those lists were scanned, so hide it then.
-const hofValRedundant = () => lastCat === 'networth' || lastCat === 'level';
-const shownCols = () => COLS.filter(c => (c.fixed || !hiddenCols.has(c.key)) && !(c.key === 'hofval' && hofValRedundant()));
-const colLabel = c => c.key === 'hofval' ? (CAT_LABELS[lastCat] || 'HoF value') : c.label;
 
 function renderHead() {
-  $('thead').innerHTML = shownCols().map(c => {
-    const label = c.srOnly ? `<span class="sr-only">${c.label}</span>` : esc(colLabel(c));
+  $('thead').innerHTML = COLS.map(c => {
+    const label = c.srOnly ? `<span class="sr-only">${c.label}</span>` : esc(c.label);
     const cls = [c.num ? 'num' : '', c.key === sortKey ? 'sorted' : ''].join(' ');
     if (c.nosort) return `<th class="${cls}" scope="col">${label}</th>`;
     const aria = c.key === sortKey ? (sortDir < 0 ? 'descending' : 'ascending') : 'none';
@@ -1149,15 +1018,9 @@ function renderHead() {
   }).join('');
 }
 
-function visibleRows() {
-  const b = baseFilter(), d = detailFilter();
-  return [...rows.values()].filter(r => b(r) && d(r));
-}
-
 let renderQueued = false;
 function scheduleRender() { if (!renderQueued) { renderQueued = true; requestAnimationFrame(() => { renderQueued = false; render(); }); } }
-
-const RENDER_LIMIT = 1500;
+const RENDER_LIMIT = 1000;
 function render() {
   const vis = visibleRows();
   const col = COLS.find(c => c.key === sortKey) || COLS[1];
@@ -1169,147 +1032,110 @@ function render() {
     return sortDir * (x - y);
   });
   renderHead();
-  const cols = shownCols();
   $('tbody').innerHTML = vis.slice(0, RENDER_LIMIT).map(r =>
-    `<tr data-id="${r.id}" class="${watch[r.id] ? 'watched' : ''}">` + cols.map(c => `<td class="${c.num ? 'num' : ''} ${c.cls || ''}">${c.render ? c.render(r) : esc(colValue(c, r) ?? '')}</td>`).join('') + '</tr>'
-  ).join('');
-  let scanned = 0, enriched = 0;
-  rows.forEach(r => { if (!r.stub) scanned++; if (r.enriched) enriched++; });
+    `<tr data-id="${r.id}" class="${watch[r.id] ? 'watched' : ''}${flashIds.has(r.id) ? ' flash' : ''}">` +
+    COLS.map(c => `<td class="${c.num ? 'num' : ''} ${c.cls || ''}">${c.render ? c.render(r) : esc(colValue(c, r) ?? '')}</td>`).join('') + '</tr>').join('');
+  let found = 0, checked = 0;
+  rows.forEach(r => { if (!r.stub) found++; if (r.checkedAt) checked++; });
   $('countShown').textContent = vis.length.toLocaleString();
-  $('countTotal').textContent = scanned.toLocaleString();
-  $('countEnriched').textContent = enriched.toLocaleString();
-  $('renderNote').textContent = vis.length > RENDER_LIMIT ? `Showing the first ${RENDER_LIMIT.toLocaleString()} of ${vis.length.toLocaleString()}. Add filters to narrow it down, or export everything as CSV.` : '';
+  $('countTotal').textContent = found.toLocaleString();
+  $('countChecked').textContent = checked.toLocaleString();
+  $('renderNote').textContent = vis.length > RENDER_LIMIT ? `Showing the top ${RENDER_LIMIT.toLocaleString()} of ${vis.length.toLocaleString()}. Add filters to narrow it down.` : '';
   $('continueBtn').disabled = running || !cursor;
-  renderEmpty(vis.length, scanned);
+  renderEmpty(vis.length, found);
   renderSummary();
   updateActionButtons();
   updateGroupCounts();
+  renderAlerts();
 }
-setInterval(() => { if (!running) scheduleRender(); }, 60000);   // keep "x ago" fresh
+setInterval(() => { if (!running) scheduleRender(); }, 30000);
 
-function renderEmpty(shown, scanned) {
+function renderEmpty(shown, found) {
   const e = $('empty');
   $('table').hidden = shown === 0;
   e.hidden = shown !== 0;
   if (shown) return;
   const view = $('fView').value;
   if (!apiKey) {
-    e.innerHTML = `<h3>Find players across Torn's Hall of Fame</h3>
-      <p>Search by level, activity, net worth, job, account age and estimated battle stats.</p>
+    e.innerHTML = `<h3>Find players worth mugging</h3>
+      <p>A mug takes a cut of the cash someone is carrying. This finds players who just made sales and haven't banked it, and shows whether you can beat them.</p>
       <button class="btn primary big" type="button" data-open-settings>Add your API key</button>
       <div class="steps">
-        <div class="step"><span class="n">1</span><b>Add a Public key</b><span>Only public data is used. Your key stays in this browser.</span></div>
-        <div class="step"><span class="n">2</span><b>Scan a list</b><span>Pick a Hall of Fame list or your level range, then press Scan.</span></div>
-        <div class="step"><span class="n">3</span><b>Filter &amp; look up</b><span>Narrow results instantly, then look up jobs and status for the ones left.</span></div>
+        <div class="step"><span class="n">1</span><b>Find players</b><span>Active players, top-earning bazaars, your level range or a faction.</span></div>
+        <div class="step"><span class="n">2</span><b>Check them</b><span>Recent sales, open bazaars, status and Fair Fight give each a mug score.</span></div>
+        <div class="step"><span class="n">3</span><b>Watch the best</b><span>Get alerted the moment their bazaar sells or they become attackable.</span></div>
       </div>`;
   } else if (view === 'watch') {
-    e.innerHTML = `<h3>Your watchlist is empty</h3><p>Press the star on any player to keep track of them here. Watched players stay saved between visits.</p>`;
+    e.innerHTML = `<h3>You're not watching anyone yet</h3><p>Press the star on a good target. Then press <b>Start watching</b> to get alerted when their bazaar sells or they become attackable.</p>`;
   } else if (view === 'hidden') {
-    e.innerHTML = `<h3>No hidden players</h3><p>Hide players you never want to see in results using the eye button on their row.</p>`;
-  } else if (!scanned) {
-    e.innerHTML = `<h3>No players scanned yet</h3><p>Choose what to scan above and press <b>Scan</b>. Each 100 players costs one API call.</p>
-      <button class="btn primary big" type="button" data-scan>${icon('search')}Scan now</button>`;
+    e.innerHTML = `<h3>No hidden players</h3><p>Hide players you never want to see again, like friends or faction mates, with the eye button on their row.</p>`;
+  } else if (!found) {
+    e.innerHTML = `<h3>No players found yet</h3><p>Choose where to look above and press <b>Find players</b>. <b>Top-earning bazaars</b> is a quick start: one call, up to 80 sellers.</p>
+      <button class="btn primary big" type="button" data-scan>${icon('search')}Find players</button>`;
   } else {
-    e.innerHTML = `<h3>No players match these filters</h3><p>${plural(scanned, 'player')} scanned, but none fit. Remove a filter above, or look up details if you're filtering by job or status.</p>
+    e.innerHTML = `<h3>No players match these filters</h3><p>${plural(found, 'player')} found, but none fit. If you're filtering on cash signals, press <b>Check players</b> first; otherwise remove a filter.</p>
       <button class="btn big" type="button" data-reset>Clear all filters</button>`;
   }
 }
-
 $('empty').addEventListener('click', e => {
   if (e.target.closest('[data-open-settings]')) openSettings();
-  else if (e.target.closest('[data-scan]')) runTask('Scan', scanFn());
+  else if (e.target.closest('[data-scan]')) runTask('Find players', findFn());
   else if (e.target.closest('[data-reset]')) resetFilters();
 });
 
 function updateActionButtons() {
   if (running) return;
-  const d = detailFilter();
-  const lc = lookupCandidates().length;
-  const cap = Math.max(1, +$('enrichCap').value || 1);
-  const n = Math.min(lc, cap);
-  const mins = Math.max(1, Math.ceil(n / budget()));
-  const anyRows = [...rows.values()].some(r => !r.stub) || Object.keys(watch).length;
-  $('enrichLabel').textContent = n ? `Look up details for ${plural(n, 'player')}` : anyRows ? 'Details up to date' : 'Look up details';
-  $('enrichBtn').disabled = !n || !apiKey;
-  $('enrichBtn').title = n ? `${plural(n, 'API call')}, about ${mins} min${lc > cap ? `. ${lc.toLocaleString()} need it; raise the limit in Settings.` : ''}` : (d.active ? 'Every matching player already has fresh details.' : 'Scan some players first.');
-  $('enrichBtn').classList.toggle('primary', !!n);
-
-  if (!ffsKey) { $('ffsLabel').textContent = 'Set up FFScouter'; $('ffsBtn').disabled = false; $('ffsBtn').title = 'Add a registered FFScouter key in Settings for stat estimates and Fair Fight.'; }
+  const lc = checkCandidates().length, cap = Math.max(1, +$('checkCap').value || 1), n = Math.min(lc, cap);
+  $('checkLabel').textContent = n ? `Check ${plural(n, 'player')}` : 'Everyone checked';
+  $('checkBtn').disabled = !n || !apiKey;
+  $('checkBtn').classList.toggle('primary', !!n);
+  $('checkBtn').title = n ? `1–2 calls each, about ${Math.max(1, Math.ceil(n * 1.4 / budget()))} min${lc > cap ? `. ${lc.toLocaleString()} could be checked; raise the limit in Settings.` : ''}` : 'Every matching player was checked recently.';
+  if (!ffsKey) { $('ffsLabel').textContent = 'Set up Fair Fight'; $('ffsBtn').disabled = false; $('ffsBtn').title = 'Add a key registered at FFScouter in Settings.'; }
   else {
-    const fc = ffsCandidates().length, req = Math.ceil(Math.min(fc, FFS_BATCH * 30) / FFS_BATCH);
-    $('ffsLabel').textContent = fc ? `FFScouter estimates (${plural(req, 'request')})` : 'FFScouter up to date';
+    const fc = ffsCandidates().length;
+    $('ffsLabel').textContent = fc ? `Get Fair Fight (${plural(Math.ceil(Math.min(fc, FFS_BATCH * 30) / FFS_BATCH), 'request')})` : 'Fair Fight up to date';
     $('ffsBtn').disabled = !fc;
     $('ffsBtn').title = fc ? `${fc.toLocaleString()} players, sent to ffscouter.com. Doesn't use your Torn API budget.` : '';
   }
-  const fac = factionCandidates().length;
-  $('factionLabel').textContent = fac ? `Faction names (${Math.min(fac, 150)})` : 'Faction names';
-  $('factionBtn').disabled = !fac || !apiKey;
-  $('factionBtn').title = fac ? `Looks up names for ${plural(Math.min(fac, 150), 'faction')} shown (1 call each, kept 7 days).` : 'All faction names shown are known.';
+  const wn = Object.keys(watch).length;
+  $('watchBtn').disabled = !wn && !watching;
+  $('watchBtn').title = wn ? `Re-checks ${plural(wn, 'watched player')} about every ${watchInterval()}s while this page is open.` : 'Star some players first.';
 }
 
-// ---------- filter summary (the readable sentence above the table) ----------
+// ---------- filter summary ----------
 function describeFilters() {
-  const out = [];
-  const v = id => $(id).value.trim();
-  const clear = (...ids) => () => ids.forEach(id => { $(id).value = ''; });
-  const range = (lo, hi, fmt, unitWord) => {
-    if (lo !== '' && hi !== '') return `${fmt(lo)}–${fmt(hi)}${unitWord}`;
-    if (lo !== '') return `${fmt(lo)}+${unitWord}`;
-    return `up to ${fmt(hi)}${unitWord}`;
-  };
-  if (v('fLvlMin') || v('fLvlMax')) out.push({ text: 'Level ' + range(v('fLvlMin'), v('fLvlMax'), x => x, ''), clear: clear('fLvlMin', 'fLvlMax') });
-  if (v('fLaMin') || v('fLaMax')) {
-    const u = $('fLaUnit').value === '3600' ? 'h' : 'd';
-    const lo = v('fLaMin'), hi = v('fLaMax');
-    const text = lo && !hi ? `Inactive ${lo}${u}+` : !lo && hi ? `Active in last ${hi}${u}` : `Last active ${lo}–${hi}${u} ago`;
-    out.push({ text, clear: clear('fLaMin', 'fLaMax') });
-  }
-  if (v('fAgeMin') || v('fAgeMax')) out.push({ text: 'Account ' + range(v('fAgeMin'), v('fAgeMax'), x => x, ' days'), clear: clear('fAgeMin', 'fAgeMax') });
-  if (v('fName')) out.push({ text: `Name has “${v('fName')}”`, clear: clear('fName') });
-  const nwMin = parseMoney(v('fNwMin')), nwMax = parseMoney(v('fNwMax'));
-  if (nwMin != null || nwMax != null) out.push({ text: 'Net worth ' + range(nwMin ?? '', nwMax ?? '', fmtMoney, ''), clear: clear('fNwMin', 'fNwMax') });
-  const fac = $('fFaction').value;
-  if (fac === 'none') out.push({ text: 'No faction', clear: clear('fFaction') });
-  if (fac === 'in') out.push({ text: 'In a faction', clear: clear('fFaction') });
-  if (fac === 'id' && v('fFactionId')) out.push({ text: `Faction #${v('fFactionId')}`, clear: clear('fFaction', 'fFactionId') });
-  const bsMin = parseMoney(v('fBsMin')), bsMax = parseMoney(v('fBsMax'));
-  if (bsMin != null || bsMax != null) out.push({ text: 'Stats ' + range(bsMin ?? '', bsMax ?? '', fmtCompact, ''), clear: clear('fBsMin', 'fBsMax') });
-  if (v('fFfMin') || v('fFfMax')) out.push({ text: 'Fair Fight ' + range(v('fFfMin'), v('fFfMax'), x => x, ''), clear: clear('fFfMin', 'fFfMax') });
-  const jobs = [...$('fJob').selectedOptions].map(o => o.textContent);
-  if (jobs.length) out.push({ text: jobs.length <= 2 ? jobs.join(' or ') : `${jobs.length} job types`, clear: () => [...$('fJob').options].forEach(o => o.selected = false) });
-  if (v('fPos')) out.push({ text: `Position “${v('fPos')}”`, clear: clear('fPos') });
-  if (v('fStars')) out.push({ text: `Company ${v('fStars')}★+`, clear: clear('fStars') });
-  const sts = [...document.querySelectorAll('#fStatus input:checked')].map(i => i.value);
-  if (sts.length) out.push({ text: sts.join(' or '), clear: () => document.querySelectorAll('#fStatus input').forEach(i => i.checked = false) });
-  if ($('fDonator').value) out.push({ text: $('fDonator').value === 'yes' ? 'Donators' : 'Non-donators', clear: clear('fDonator') });
-  if (v('fProp')) out.push({ text: `Property “${v('fProp')}”`, clear: clear('fProp') });
+  const out = [], v = id => $(id).value.trim(), clear = (...ids) => () => ids.forEach(id => { $(id).value = ''; });
+  const uncheck = id => () => { $(id).checked = false; };
+  if (v('fFfMax')) out.push({ text: `Fair Fight ≤ ${v('fFfMax')}`, clear: clear('fFfMax') });
+  if (parseMoney(v('fBsMax')) != null) out.push({ text: `Stats ≤ ${fmtCompact(parseMoney(v('fBsMax')))}`, clear: clear('fBsMax') });
+  if ($('fKnownOnly').checked) out.push({ text: 'Strength known', clear: uncheck('fKnownOnly') });
+  if (v('fSoldWithin')) out.push({ text: $('fSoldWithin').selectedOptions[0].textContent.replace(/^In the /, 'Sold in the ').replace(/^Today$/, 'Sold today').replace(/^Today or yesterday$/, 'Sold today or yesterday'), clear: clear('fSoldWithin') });
+  if (parseMoney(v('fSalesMin')) != null) out.push({ text: `Sales ${fmtMoney(parseMoney(v('fSalesMin')))}+ this week`, clear: clear('fSalesMin') });
+  if ($('fBazaarOpen').checked) out.push({ text: 'Bazaar open', clear: uncheck('fBazaarOpen') });
+  const lo = v('fLvlMin'), hi = v('fLvlMax');
+  if (lo || hi) out.push({ text: 'Level ' + (lo && hi ? `${lo}–${hi}` : lo ? `${lo}+` : `up to ${hi}`), clear: clear('fLvlMin', 'fLvlMax') });
+  if (v('fActive')) out.push({ text: $('fActive').selectedOptions[0].textContent.replace(' (not watching)', ''), clear: clear('fActive') });
+  if ($('fAttackable').checked) out.push({ text: 'Attackable now', clear: uncheck('fAttackable') });
+  if ($('fNoClothing').checked) out.push({ text: 'Not mug-protected', clear: uncheck('fNoClothing') });
+  if ($('fNoFaction').checked) out.push({ text: 'No faction', clear: uncheck('fNoFaction') });
   return out;
 }
 let summaryItems = [];
 function renderSummary() {
   summaryItems = describeFilters();
   const view = $('fView').value;
-  const lead = view === 'watch' ? 'Watchlist' : view === 'hidden' ? 'Hidden players' : 'All scanned players';
+  const lead = view === 'watch' ? 'Watching' : view === 'hidden' ? 'Hidden players' : 'Targets';
   $('summary').innerHTML = `<span class="lead">${lead}${summaryItems.length ? ':' : ', no filters.'}</span>` +
     summaryItems.map((it, i) => `<button type="button" class="chip-x" data-i="${i}" aria-label="Remove filter: ${esc(it.text)}">${esc(it.text)}${icon('x')}</button>`).join('');
 }
 $('summary').addEventListener('click', e => {
   const b = e.target.closest('.chip-x'); if (!b) return;
-  summaryItems[+b.dataset.i]?.clear();
-  syncFactionId(); saveForm(); render();
+  summaryItems[+b.dataset.i]?.clear(); saveForm(); render();
 });
-
 function updateGroupCounts() {
-  const groups = {
-    activity: ['fLaMin', 'fLaMax'],
-    level: ['fLvlMin', 'fLvlMax', 'fAgeMin', 'fAgeMax', 'fName'],
-    wealth: ['fNwMin', 'fNwMax', 'fFaction'],
-    stats: ['fBsMin', 'fBsMax', 'fFfMin', 'fFfMax'],
-    job: ['fPos', 'fStars', 'fDonator', 'fProp'],
-  };
+  const groups = { win: ['fFfMax', 'fBsMax', '#fKnownOnly'], cash: ['fSoldWithin', 'fSalesMin', '#fBazaarOpen'], target: ['fLvlMin', 'fLvlMax', 'fActive', '#fAttackable', '#fNoClothing', '#fNoFaction'] };
   for (const [g, ids] of Object.entries(groups)) {
-    let n = ids.filter(id => $(id).value.trim() !== '').length;
-    if (g === 'job') n += ($('fJob').selectedOptions.length ? 1 : 0) + (document.querySelector('#fStatus input:checked') ? 1 : 0);
+    const n = ids.filter(id => id[0] === '#' ? $(id.slice(1)).checked : $(id).value.trim() !== '').length;
     const el = document.querySelector(`.group[data-group="${g}"] .count`);
     el.hidden = !n; el.textContent = n;
   }
@@ -1318,50 +1144,33 @@ function updateGroupCounts() {
 $('thead').addEventListener('click', e => {
   const b = e.target.closest('button[data-k]'); if (!b) return;
   const k = b.dataset.k;
-  if (k === sortKey) sortDir = -sortDir; else { sortKey = k; sortDir = ['name', 'jobLabel', 'faction', 'note', 'position', 'company', 'status', 'property'].includes(k) ? 1 : -1; }
+  if (k === sortKey) sortDir = -sortDir; else { sortKey = k; sortDir = ['name', 'state'].includes(k) ? 1 : k === 'win' ? 1 : -1; }
   render();
   document.querySelector(`#thead button[data-k="${k}"]`)?.focus();
 });
-
 $('tbody').addEventListener('click', e => {
   const btn = e.target.closest('button[data-act]'); if (!btn) return;
-  const id = +btn.closest('tr').dataset.id;
-  const r = rows.get(id);
-  const act = btn.dataset.act;
-  if (act === 'watch') {
-    if (watch[id]) { delete watch[id]; toast(`Removed ${r?.name || id} from watchlist`); }
-    else { watch[id] = { name: r?.name || String(id), note: '', t: Date.now() }; toast(`Watching ${r?.name || id}`); }
+  const id = +btn.closest('tr').dataset.id, r = rows.get(id), name = r ? displayName(r) : id;
+  if (btn.dataset.act === 'watch') {
+    if (watch[id]) { delete watch[id]; toast(`Stopped watching ${name}`); }
+    else { watch[id] = { name: r?.name || String(id), t: Date.now() }; toast(`Watching ${name}`); }
     saveWatch();
-  } else if (act === 'note') {
-    const cur = watch[id]?.note || '';
-    const n = prompt(`Note on ${r?.name || id}. Saving a note also adds them to your watchlist.`, cur);
-    if (n == null) return;
-    if (!watch[id]) watch[id] = { name: r?.name || String(id), note: '', t: Date.now() };
-    watch[id].note = n.trim();
-    saveWatch();
-  } else if (act === 'hide') {
-    if (hidden[id]) { delete hidden[id]; toast(`${r?.name || id} is visible again`); }
-    else { hidden[id] = r?.name || String(id); toast(`Hid ${r?.name || id}. Find them under Hidden.`); }
+  } else if (btn.dataset.act === 'hide') {
+    if (hidden[id]) { delete hidden[id]; toast(`${name} is visible again`); }
+    else { hidden[id] = r?.name || String(id); toast(`Hid ${name}. Find them under Hidden.`); }
     saveHidden();
   }
   render();
 });
 
-// ---------- column menu ----------
-function buildColMenu() {
-  $('colMenu').innerHTML = COLS.filter(c => !c.fixed).map(c =>
-    `<label class="check"><input type="checkbox" data-col="${c.key}" ${hiddenCols.has(c.key) ? '' : 'checked'}>${c.key === 'hofval' ? 'Scanned list value' : c.label}</label>`).join('');
+function saveWatch() { store.set('tps_watch', watch); $('watchCount').textContent = Object.keys(watch).length; }
+function saveHidden() { store.set('tps_hidden', hidden); $('hiddenCount').textContent = Object.keys(hidden).length; }
+function ensureWatchRows() {
+  for (const id of Object.keys(watch)) { const n = +id; if (!rows.has(n)) { const r = { id: n, name: watch[id].name, stub: true }; rows.set(n, r); applyCached(r); } }
 }
-$('colMenu').addEventListener('change', e => {
-  const k = e.target.dataset.col; if (!k) return;
-  if (e.target.checked) hiddenCols.delete(k); else hiddenCols.add(k);
-  store.set('tps_cols2', [...hiddenCols]);
-  render();
-});
-document.addEventListener('click', e => { const d = $('colsMenu'); if (d.open && !d.contains(e.target)) d.open = false; });
 
-// ---------- running tasks ----------
-const TASK_BTNS = ['scanBtn', 'continueBtn', 'enrichBtn', 'myLevelBtn', 'factionBtn', 'ffsBtn'];
+// ---------- tasks ----------
+const TASK_BTNS = ['scanBtn', 'continueBtn', 'checkBtn', 'myLevelBtn', 'ffsBtn'];
 async function runTask(name, fn, needsTornKey = true) {
   if (running) return;
   if (needsTornKey && !apiKey) { openSettings(); $('apiKey').focus(); toast('Add your Torn API key first'); return; }
@@ -1381,361 +1190,339 @@ async function runTask(name, fn, needsTornKey = true) {
     $('stopBtn').disabled = true;
     TASK_BTNS.forEach(id => $(id).disabled = false);
     if (!failed) setStatus(`${esc(name)} done.`);
-    render();
-    saveCache(); saveRows(); saveWatch(); idb.set('ffcache', ffCache);
+    render(); persist();
   }
 }
-
-async function fetchHof(cat, offset, limit = 100) {
-  const d = await api('/torn/hof', { cat, limit, offset });
-  if (d.error) throw new Error(`Hall of Fame error: ${d.error.error}`);
-  return d.hof || [];
+async function persist() {
+  const now = Date.now();
+  for (const [id, c] of Object.entries(checks)) if (now - c.t > 3 * 86400e3) delete checks[id];
+  await idb.set('checks', checks);
+  await idb.set('ffcache', ffCache);
+  await idb.set('mugrows', [...rows.values()].filter(r => !r.stub).slice(-8000));
+  await idb.set('mugmeta', { cursor });
+  saveWatch();
 }
 
-// Scan pages starting at cursor.offset; updates cursor as it goes so "Scan more" resumes exactly.
-async function scanPages() {
-  const pages = Math.max(1, +$('maxPages').value || 1);
-  const { cat, lvlMin } = cursor;
-  lastCat = cat;
-  for (let p = 0; p < pages; p++) {
-    setStatus(`Scanning <b>${esc(CAT_LABELS[cat] || cat)}</b>: ${((p) * 100).toLocaleString()} of ${(pages * 100).toLocaleString()} players (from #${(cursor.offset + 1).toLocaleString()})`);
-    const hof = await fetchHof(cat, cursor.offset);
-    hof.forEach(h => upsertHof(h, cat));
-    cursor.offset += hof.length;
-    setProgress((p + 1) / pages);
-    scheduleRender();
-    if (hof.length < 100) { log('Reached the end of this Hall of Fame list.'); cursor = null; return; }
-    if (lvlMin != null && hof[hof.length - 1].level < lvlMin) { log('Reached the bottom of your level range.'); cursor = null; return; }
-  }
-  log(`Scanned ${(pages * 100).toLocaleString()} players. Press “Scan more” to continue from #${(cursor.offset + 1).toLocaleString()}.`);
-}
-
-async function scanCategory() {
-  cursor = { cat: $('cat').value, offset: Math.max(0, (+$('startPos').value || 1) - 1), lvlMin: null };
-  await scanPages();
-}
-
-async function scanLevelBand() {
+// ---- sources ----
+async function findSearch(target) {
   const lvlMax = numOrNull('fLvlMax'), lvlMin = numOrNull('fLvlMin');
-  if (lvlMax == null || lvlMin == null) throw new Error('Set a level range in Filters (or press “Use my level”) to scan your level range.');
-  const probeCache = new Map();
-  const probe = async off => {
-    if (probeCache.has(off)) return probeCache.get(off);
-    const h = await fetchHof('level', off, 1);
-    const lvl = h.length ? h[0].level : -1;  // -1 = past the end
-    probeCache.set(off, lvl);
-    return lvl;
-  };
-  // find first offset whose level <= lvlMax (Level HoF is sorted high -> low)
-  setStatus(`Finding level ${lvlMax} in the Hall of Fame…`);
-  let lo = 0, hi = 1024;
-  while ((await probe(hi)) > lvlMax) { lo = hi; hi *= 2; if (hi > 1e8) break; }
-  while (lo < hi) {
-    const mid = Math.floor((lo + hi) / 2);
-    const lvl = await probe(mid);
-    if (lvl !== -1 && lvl > lvlMax) lo = mid + 1; else hi = mid;
-    setStatus(`Finding level ${lvlMax} in the Hall of Fame… (around #${(lo + 1).toLocaleString()})`);
+  if (!cursor) {
+    const filters = [$('activity').value, 'notTraveling', 'notInHospital', 'notInJail', 'notInFederalJail'];
+    if (lvlMax != null) filters.push(`level:LessOrEqual:${lvlMax}`);        // the API honours one level condition; min is filtered here
+    else if (lvlMin != null) filters.push(`level:GreaterOrEqual:${lvlMin}`);
+    if ($('fNoFaction').checked) filters.push('notInFaction');
+    cursor = { kind: 'search', filters: filters.join(','), next: null };
   }
-  log(`Level ${lvlMax} starts around Hall of Fame #${(lo + 1).toLocaleString()} (found in ${probeCache.size} calls).`);
-  cursor = { cat: 'level', offset: lo, lvlMin };
-  await scanPages();
+  let got = 0, pages = 0;
+  const maxPages = Math.ceil(target / 25) * 3;   // allow extra pages when the min level discards results
+  while (got < target && pages < maxPages) {
+    setStatus(`Finding active players: <b>${got} of ${target}</b>`);
+    const params = { filters: cursor.filters };
+    if (cursor.next) params.cursor = cursor.next;
+    const d = await api('/user/search', params);
+    if (d.error) throw new Error(`Search error: ${d.error.error}`);
+    for (const u of d.search || []) { if (lvlMin != null && u.level < lvlMin) continue; fromSearch(u); got++; }
+    pages++;
+    setProgress(got / target); scheduleRender();
+    const next = d._metadata?.links?.next;
+    cursor.next = next ? new URL(next).searchParams.get('cursor') : null;
+    if (!cursor.next) { cursor = null; log('No more players match this search.'); break; }
+  }
+  log(`Found ${plural(got, 'active player')}.`);
+}
+async function findBazaars() {
+  setStatus('Loading this week’s top bazaars…');
+  const d = await api('/market/bazaar');
+  if (d.error) throw new Error(`Bazaar list error: ${d.error.error}`);
+  const lists = d.bazaar || {};
+  const seen = new Set();
+  for (const [list, entries] of Object.entries(lists)) {
+    for (const b of entries || []) {
+      const metric = Object.keys(b).find(k => !['id', 'name', 'is_open'].includes(k));
+      fromBazaarList(b, metric, b[metric]); seen.add(b.id);
+    }
+  }
+  cursor = null; setProgress(1);
+  log(`Found ${plural(seen.size, 'top bazaar seller')}.`);
+}
+async function findHof(cat) {
+  if (!cursor) cursor = { kind: 'hof', cat, offset: Math.max(0, (+$('startPos').value || 1) - 1), lvlMin: null };
+  await hofPages();
+}
+async function hofPages() {
+  const pages = Math.max(1, Math.ceil((+$('count').value || 250) / 100));
+  for (let p = 0; p < pages; p++) {
+    setStatus(`Loading the Hall of Fame: <b>${(p * 100).toLocaleString()} of ${(pages * 100).toLocaleString()}</b>`);
+    const d = await api('/torn/hof', { cat: cursor.cat, limit: 100, offset: cursor.offset });
+    if (d.error) throw new Error(`Hall of Fame error: ${d.error.error}`);
+    const hof = d.hof || [];
+    hof.forEach(fromHof);
+    cursor.offset += hof.length;
+    setProgress((p + 1) / pages); scheduleRender();
+    if (hof.length < 100) { cursor = null; return; }
+    if (cursor.lvlMin != null && hof[hof.length - 1].level < cursor.lvlMin) { log('Reached the bottom of your level range.'); cursor = null; return; }
+  }
+}
+async function findLevelBand() {
+  const lvlMax = numOrNull('fLvlMax'), lvlMin = numOrNull('fLvlMin');
+  if (lvlMax == null || lvlMin == null) throw new Error('Set a level range in Filters (or press “Use my level”) first.');
+  if (!cursor) {
+    const probeCache = new Map();
+    const probe = async off => {
+      if (probeCache.has(off)) return probeCache.get(off);
+      const d = await api('/torn/hof', { cat: 'level', limit: 1, offset: off });
+      const lvl = d.hof?.length ? d.hof[0].level : -1;
+      probeCache.set(off, lvl); return lvl;
+    };
+    setStatus(`Finding level ${lvlMax} in the Hall of Fame…`);
+    let lo = 0, hi = 1024;
+    while ((await probe(hi)) > lvlMax) { lo = hi; hi *= 2; if (hi > 1e8) break; }
+    while (lo < hi) { const mid = Math.floor((lo + hi) / 2), lvl = await probe(mid); if (lvl !== -1 && lvl > lvlMax) lo = mid + 1; else hi = mid; }
+    cursor = { kind: 'hof', cat: 'level', offset: lo, lvlMin };
+  }
+  await hofPages();
+}
+async function findFaction() {
+  const fid = numOrNull('factionId');
+  if (!fid) throw new Error('Enter a faction ID first.');
+  setStatus(`Loading faction ${fid}…`);
+  const d = await api(`/faction/${fid}/members`);
+  if (d.error) throw new Error(`Faction error: ${d.error.error}`);
+  const members = Array.isArray(d.members) ? d.members : Object.values(d.members || {});
+  members.forEach(fromMember);
+  cursor = null; setProgress(1);
+  log(`Found ${plural(members.length, 'faction member')}.`);
+}
+function findFn() {
+  const src = $('source').value;
+  cursor = null;
+  const fn = { search: () => findSearch(+$('count').value || 250), bazaar: findBazaars, levelband: findLevelBand, networth: () => findHof('networth'), faction: findFaction }[src];
+  return withFollowUps(fn);
+}
+function continueFn() {
+  if (!cursor) return null;
+  return withFollowUps(cursor.kind === 'search' ? () => findSearch(+$('count').value || 250) : hofPages);
+}
+function withFollowUps(fn) {
+  return async () => {
+    await fn();
+    if ($('autoCheck').checked) await checkPlayers();
+    if ($('ffsAuto').checked && ffsKey) await fetchFfs();
+  };
 }
 
-async function enrich() {
-  const cap = Math.max(1, +$('enrichCap').value || 1);
-  const todo = lookupCandidates().slice(0, cap);
-  if (!todo.length) { log('Nothing to look up. Every matching player already has fresh details.'); return; }
-  const rpm = budget();
-  log(`Looking up ${plural(todo.length, 'player')} (about ${Math.ceil(todo.length / rpm)} min at ${rpm}/min).`);
+// ---- check ----
+async function checkOne(r) {
+  const d = await api(`/user/${r.id}`, { selections: 'profile,job,bazaar,personalstats', stat: CHECK_STATS.join(',') });
+  if (d.error) { log(`Couldn't check ${displayName(r)}: ${d.error.error}`, 'warn'); return false; }
+  const slim = { profile: d.profile, job: d.job, bazaar: d.bazaar, bazaar_is_open: d.bazaar_is_open, bazaar_exists: d.bazaar_exists, personalstats: d.personalstats };
+  applyCheck(r, slim, Date.now());
+  // Weekly sales amount: only worth a call if they sold something in the last week.
+  if (r.saleDays != null && r.saleDays <= 7 && r.state === 'Okay') {
+    const then = Math.floor(Date.now() / 1000) - 7 * 86400;
+    const h = await api(`/user/${r.id}/personalstats`, { stat: MONEY_STATS.join(','), timestamp: then });
+    if (!h.error) {
+      const now = Object.fromEntries((d.personalstats || []).map(s => [s.name, s.value]));
+      slim.sales7d = (h.personalstats || []).reduce((sum, s) => sum + Math.max(0, (now[s.name] ?? s.value) - s.value), 0);
+      applyCheck(r, slim, Date.now());
+    }
+  }
+  checks[r.id] = { t: r.checkedAt, d: slim };
+  return true;
+}
+async function checkPlayers() {
+  const cap = Math.max(1, +$('checkCap').value || 1);
+  const todo = checkCandidates().slice(0, cap);
+  if (!todo.length) { log('Nothing to check. Every matching player was checked recently.'); return; }
+  log(`Checking ${plural(todo.length, 'player')}…`);
   let done = 0;
   for (const r of todo) {
-    setStatus(`Looking up details: <b>${done + 1} of ${todo.length}</b> · ${esc(r.name)}`);
-    const data = await api(`/user/${r.id}`, { selections: 'profile,job,personalstats', stat: 'networth,criminaloffenses' });
-    if (data.error) log(`Skipped ${r.name} [${r.id}]: ${data.error.error}`, 'warn');
-    else {
-      const slim = { profile: data.profile, job: data.job, personalstats: data.personalstats };
-      profileCache[r.id] = { t: Date.now(), d: slim };
-      applyEnriched(r, slim);
-    }
-    done++;
-    setProgress(done / todo.length);
-    if (done % 50 === 0) saveCache();
+    setStatus(`Checking <b>${done + 1} of ${todo.length}</b>: ${esc(displayName(r))}`);
+    await checkOne(r);
+    done++; setProgress(done / todo.length);
+    if (done % 40 === 0) idb.set('checks', checks);
     scheduleRender();
   }
 }
 
-async function resolveFactions() {
-  const ids = factionCandidates().slice(0, 150);
-  if (!ids.length) { log('All faction names shown are already known.'); return; }
-  log(`Looking up ${plural(ids.length, 'faction')}…`);
-  let done = 0;
-  for (const id of ids) {
-    setStatus(`Looking up faction names: <b>${done + 1} of ${ids.length}</b>`);
-    const d = await api(`/faction/${id}/basic`);
-    if (!d.error && d.basic) factions[id] = { name: d.basic.name, tag: d.basic.tag, t: Date.now() };
-    done++;
-    setProgress(done / ids.length);
-    scheduleRender();
-  }
-  store.set('tps_factions', factions);
-}
-
-// FFScouter: batch up to 205 players per request. Its limits are separate from Torn's; we still space calls out politely.
+// ---- FFScouter ----
 async function fetchFfs() {
-  if (!ffsKey) throw new FatalApiError('Add a registered FFScouter key in Settings first.');
+  if (!ffsKey) throw new FatalApiError('Add a key registered at FFScouter in Settings first.');
   const ids = ffsCandidates().slice(0, FFS_BATCH * 30);
-  if (!ids.length) { log('FFScouter: every matching player already has a fresh estimate.'); return; }
+  if (!ids.length) { log('Fair Fight: everyone shown already has a fresh number.'); return; }
   const batches = Math.ceil(ids.length / FFS_BATCH);
-  log(`FFScouter: getting ${plural(ids.length, 'player')} in ${plural(batches, 'request')}…`);
   for (let i = 0, n = 0; i < ids.length; ) {
     if (stopFlag) throw new StopError();
     const batch = ids.slice(i, i + FFS_BATCH);
-    setStatus(`Getting FFScouter estimates: <b>request ${n + 1} of ${batches}</b>`);
+    setStatus(`Getting Fair Fight: <b>request ${n + 1} of ${batches}</b>`);
     let data;
-    try {
-      const res = await fetch(`${FFS_API}/get-stats?${new URLSearchParams({ key: ffsKey, targets: batch.join(',') })}`);
-      data = await res.json();
-    } catch (e) { throw new Error(`Couldn't reach FFScouter: ${e.message}`); }
+    try { data = await (await fetch(`${FFS_API}/get-stats?${new URLSearchParams({ key: ffsKey, targets: batch.join(',') })}`)).json(); }
+    catch (e) { throw new Error(`Couldn't reach FFScouter: ${e.message}`); }
     if (!Array.isArray(data)) {
       const code = data && data.code;
-      if (code === 20 || code === 21) {                 // rate limited: wait what they ask, then retry this batch
+      if (code === 20 || code === 21) {
         const wait = Math.min(120, +data.retry_after_seconds || 30);
         log(`FFScouter asked us to slow down. Waiting ${wait}s…`, 'warn');
         for (let s = 0; s < wait * 2; s++) { if (stopFlag) throw new StopError(); await sleep(500); }
         continue;
       }
-      if ([1, 2, 6].includes(code)) throw new FatalApiError(`FFScouter doesn't recognise this key. Register it at ffscouter.com, then try again.`);
+      if ([1, 2, 6].includes(code)) throw new FatalApiError('FFScouter doesn’t recognise this key. Register it at ffscouter.com, then try again.');
       throw new Error(`FFScouter error${code ? ` (code ${code})` : ''}: ${data && data.error || 'unexpected response'}`);
     }
-    const now = Date.now();
-    const got = new Set();
-    for (const e of data) {
-      got.add(e.player_id);
-      ffCache[e.player_id] = { t: now, ff: e.fair_fight ?? null, bs: e.bs_estimate ?? null, human: e.bs_estimate_human || null, src: e.source || null, upd: e.last_updated || null };
-    }
-    for (const id of batch) {
-      if (!got.has(id)) ffCache[id] = { t: now, ff: null, bs: null };   // unknown to FFScouter; don't re-ask for 12h
-      const r = rows.get(id); if (r) r.ffs = ffCache[id];
-    }
+    const now = Date.now(), got = new Set();
+    for (const e of data) { got.add(e.player_id); ffCache[e.player_id] = { t: now, ff: e.fair_fight ?? null, bs: e.bs_estimate ?? null, human: e.bs_estimate_human || null, upd: e.last_updated || null }; }
+    for (const id of batch) { if (!got.has(id)) ffCache[id] = { t: now, ff: null, bs: null }; const r = rows.get(id); if (r) r.ffs = ffCache[id]; }
     i += FFS_BATCH; n++;
-    setProgress(n / batches);
-    scheduleRender();
+    setProgress(n / batches); scheduleRender();
     if (i < ids.length) await sleep(1000);
   }
-  const known = ids.filter(id => ffCache[id] && ffCache[id].bs != null).length;
-  log(`FFScouter: estimates for ${known.toLocaleString()} of ${ids.length.toLocaleString()} players.`);
+  log(`Fair Fight: got ${ids.filter(id => ffCache[id]?.ff != null).length.toLocaleString()} of ${ids.length.toLocaleString()} players.`);
 }
 
 async function useMyLevel() {
   const d = await api('/user/profile');
   if (d.error) throw new Error(d.error.error);
   const lvl = d.profile.level, s = Math.max(0, +$('levelSpread').value || 0);
-  $('fLvlMin').value = Math.max(1, lvl - s);
-  $('fLvlMax').value = Math.min(100, lvl + s);
+  $('fLvlMin').value = Math.max(1, lvl - s); $('fLvlMax').value = Math.min(100, lvl + s);
   saveForm();
   toast(`You're level ${lvl}. Showing levels ${Math.max(1, lvl - s)}–${Math.min(100, lvl + s)}.`);
 }
 
-function withAutoLookup(scanFn) {
-  return async () => {
-    await scanFn();
-    if ($('autoLookup').checked) await enrich();
-    if ($('ffsAuto').checked && ffsKey) await fetchFfs();
-  };
-}
-
-// ---------- CSV / clipboard ----------
-function exportCsv() {
-  const vis = visibleRows();
-  if (!vis.length) { toast('Nothing to export yet'); return; }
-  const head = ['id', 'name', 'level', 'est_stats', 'est_stats_source', 'fair_fight', 'networth', `hof_${lastCat}`, 'hof_pos', 'last_action_utc', 'age_days', 'job', 'position', 'stars', 'company', 'faction_id', 'faction_name', 'status', 'donator', 'property', 'watched', 'note'];
-  const q = v => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-  const lines = [head.join(',')].concat(vis.map(r => [
-    r.id, r.name, r.level, (s => s ? (s.src === 'ffs' ? r.ffs.bs : s.label) : '')(statRange(r)), statRange(r)?.src, r.ffs?.ff, r.networth, r.hof[lastCat]?.value, r.hof[lastCat]?.pos,
-    r.last_action ? new Date(r.last_action * 1000).toISOString() : '', r.age,
-    r.jobLabel, r.position, r.stars, r.company, r.faction_id, factions[r.faction_id]?.name, r.status, r.donator, r.property,
-    watch[r.id] ? 'yes' : '', watch[r.id]?.note
-  ].map(q).join(',')));
-  download(`torn-players-${new Date().toISOString().slice(0, 10)}.csv`, lines.join('\n'), 'text/csv');
-  toast(`Exported ${plural(vis.length, 'player')}`);
-}
-function download(name, text, type) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([text], { type }));
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-}
-async function copyIds() {
-  const vis = visibleRows();
-  if (!vis.length) { toast('No players to copy'); return; }
-  const ids = vis.map(r => r.id).join(',');
-  try { await navigator.clipboard.writeText(ids); }
-  catch { const t = document.createElement('textarea'); t.value = ids; document.body.append(t); t.select(); document.execCommand('copy'); t.remove(); }
-  toast(`Copied ${plural(vis.length, 'player ID')}`);
-}
-
-// ---------- form persistence + saved searches ----------
-const FORM_FIELDS = ['rpm','mode','cat','startPos','maxPages','levelSpread','fView','fLvlMin','fLvlMax','fLaMin','fLaMax','fLaUnit','fAgeMin','fAgeMax','fFaction','fFactionId','fName','fNwMin','fNwMax','fPos','fStars','fDonator','fProp','fBsMin','fBsMax','fFfMin','fFfMax','enrichCap','cacheHours'];
-const FILTER_FIELDS = ['fLvlMin','fLvlMax','fLaMin','fLaMax','fAgeMin','fAgeMax','fFaction','fFactionId','fName','fNwMin','fNwMax','fPos','fStars','fDonator','fProp','fBsMin','fBsMax','fFfMin','fFfMax'];
-function getForm() {
-  const o = {}; FORM_FIELDS.forEach(id => o[id] = $(id).value);
-  o.fJob = [...$('fJob').selectedOptions].map(x => x.value);
-  o.fStatus = [...document.querySelectorAll('#fStatus input:checked')].map(i => i.value);
-  o.autoLookup = $('autoLookup').checked;
-  o.ffsAuto = $('ffsAuto').checked;
-  return o;
-}
-function setForm(o, fields = FORM_FIELDS) {
-  fields.forEach(id => {
-    if (o[id] == null) return;
-    const el = $(id);
-    el.value = o[id];
-    if (el.tagName === 'SELECT' && el.value !== String(o[id]) && id === 'maxPages') {   // custom page count from older versions
-      el.append(new Option((+o[id] * 100).toLocaleString(), o[id])); el.value = o[id];
+// ---------- watching (Phase 4) ----------
+let watching = false, watchLoop = null;
+const flashIds = new Set();
+const watchInterval = () => { const n = Object.keys(watch).length || 1; return Math.max(30, Math.ceil(n * 60 / (budget() * 0.5))); };   // uses at most half the budget
+function startWatching() {
+  if (!apiKey) { openSettings(); toast('Add your Torn API key first'); return; }
+  if (!Object.keys(watch).length) { toast('Star some players to watch first'); return; }
+  if ($('watchNotify').checked && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+  watching = true;
+  $('watchBtn').classList.add('on'); $('watchBtn').setAttribute('aria-pressed', 'true'); $('watchLabel').textContent = 'Stop watching';
+  log(`Watching ${plural(Object.keys(watch).length, 'player')}.`);
+  watchLoop = (async () => {
+    while (watching) {
+      const t0 = Date.now();
+      for (const id of Object.keys(watch).map(Number)) {
+        if (!watching) break;
+        try { await watchOne(id); } catch (e) { if (e instanceof StopError) break; if (e instanceof FatalApiError) { log(e.message, 'err'); stopWatching(); break; } log(e.message, 'warn'); }
+      }
+      const wait = watchInterval() * 1000 - (Date.now() - t0);
+      for (let w = 0; watching && w < wait; w += 500) { $('watchState').textContent = `Next check in ${Math.ceil((wait - w) / 1000)}s`; await sleep(500); }
     }
-  });
-  if (o.fJob) [...$('fJob').options].forEach(op => op.selected = o.fJob.includes(op.value));
-  if (o.fStatus) document.querySelectorAll('#fStatus input').forEach(i => i.checked = o.fStatus.includes(i.value));
-  if (o.autoLookup != null) $('autoLookup').checked = o.autoLookup;
-  if (o.ffsAuto != null) $('ffsAuto').checked = o.ffsAuto;
-  syncMode(); syncFactionId(); syncView();
+    $('watchState').textContent = '';
+  })();
+  updateActionButtons();
 }
-function saveForm() { store.set('tps_form', getForm()); }
-function loadForm() { const o = store.get('tps_form', null); if (o) setForm(o); }
-
-function resetFilters() {
-  FILTER_FIELDS.forEach(id => $(id).value = '');
-  $('fLaUnit').value = '86400';
-  [...$('fJob').options].forEach(o => o.selected = false);
-  document.querySelectorAll('#fStatus input').forEach(i => i.checked = false);
-  syncFactionId(); saveForm(); render();
-  toast('Filters cleared');
+function stopWatching() {
+  if (!watching) return;
+  watching = false;
+  $('watchBtn').classList.remove('on'); $('watchBtn').setAttribute('aria-pressed', 'false'); $('watchLabel').textContent = 'Start watching';
+  $('watchState').textContent = '';
+  log('Stopped watching.');
 }
-
-function buildPresetSel() {
-  const sel = $('presetSel'), cur = sel.value;
-  sel.innerHTML = '<option value="">Choose a saved search…</option>' + Object.keys(presets).sort().map(n => `<option>${esc(n)}</option>`).join('');
-  if (presets[cur]) sel.value = cur;
-  $('presetDel').hidden = !sel.value;
+async function watchOne(id) {
+  const r = getRow(id);
+  const prev = { state: r.state, bzValue: r.checkedAt ? r.bzValue : null, bzItems: r.bzItems, lastAction: r.lastAction };
+  $('watchState').textContent = `Checking ${displayName(r)}…`;
+  const d = await api(`/user/${id}`, { selections: 'profile,bazaar' }, true);
+  if (d.error) return;
+  const p = d.profile || {};
+  r.name = p.name ?? r.name; r.level = p.level ?? r.level;
+  if (p.last_action) { r.lastAction = p.last_action.timestamp; r.online = p.last_action.status; }
+  if (p.status) Object.assign(r, { state: p.status.state, stateDesc: p.status.description, until: p.status.until });
+  const items = d.bazaar || [];
+  const value = items.reduce((s, it) => s + (it.price || 0) * (it.quantity || 0), 0);
+  Object.assign(r, { bzOpen: !!d.bazaar_is_open, bzExists: !!d.bazaar_exists, bzItems: items.length, bzValue: value, hasBazaar: items.length > 0 });
+  if (!r.checkedAt) r.checkedAt = Date.now();
+  // Alerts
+  if (prev.bzValue != null && value < prev.bzValue) {
+    const sold = prev.bzValue - value;
+    raiseAlert(r, `sold ${fmtMoney(sold)} from their bazaar`, r.state === 'Okay' && r.online !== 'Online' ? 'Idle, cash likely still in their wallet' : r.state === 'Okay' ? 'Online, may bank it soon' : `Currently ${r.state}`);
+  }
+  if (prev.state && prev.state !== 'Okay' && r.state === 'Okay') raiseAlert(r, prev.state === 'Traveling' || prev.state === 'Abroad' ? 'landed in Torn and can be attacked' : `is out of ${prev.state.toLowerCase()} and can be attacked`, '');
+  scheduleRender();
 }
-$('presetSel').addEventListener('change', e => {
-  $('presetDel').hidden = !e.target.value;
-  const p = presets[e.target.value]; if (!p) return;
-  setForm(p); saveForm(); render(); toast(`Loaded “${e.target.value}”`);
-});
-$('presetSave').addEventListener('click', () => {
-  const name = prompt('Name this search. It saves what you scan and all your filters.', $('presetSel').value || '');
-  if (!name || !name.trim()) return;
-  const o = getForm(); delete o.rpm; delete o.enrichCap; delete o.cacheHours;
-  presets[name.trim()] = o;
-  store.set('tps_presets', presets); buildPresetSel(); $('presetSel').value = name.trim(); $('presetDel').hidden = false;
-  toast(`Saved “${name.trim()}”`);
-});
-$('presetDel').addEventListener('click', () => {
-  const n = $('presetSel').value; if (!n) return;
-  if (!confirm(`Delete the saved search “${n}”?`)) return;
-  delete presets[n]; store.set('tps_presets', presets); buildPresetSel(); toast(`Deleted “${n}”`);
-});
-
-// Quick one-click filters that only touch the fields they're about.
-const QUICK = [
-  { label: 'Online in last hour', set: { fLaMin: '', fLaMax: '1', fLaUnit: '3600' } },
-  { label: 'Active today', set: { fLaMin: '', fLaMax: '1', fLaUnit: '86400' } },
-  { label: 'Active this week', set: { fLaMin: '', fLaMax: '7', fLaUnit: '86400' } },
-  { label: 'Inactive 30+ days', set: { fLaMin: '30', fLaMax: '', fLaUnit: '86400' } },
-  { label: 'No faction', set: { fFaction: 'none' } },
-  { label: 'Worth $1b+', set: { fNwMin: '1b' } },
-  { label: 'Unemployed', set: { fJob: ['none'] } },
-  { label: 'City jobs', set: { fJob: CITY_JOBS.map(j => 'j' + j) } },
-  { label: 'Okay to attack', set: { fStatus: ['Okay'] } },
-  { label: 'New (under 1 year)', set: { fAgeMin: '', fAgeMax: '365' } },
-  { label: 'Veteran (5+ years)', set: { fAgeMin: '1825', fAgeMax: '' } },
-];
-function buildChips() {
-  $('quickChips').innerHTML = QUICK.map((q, i) => `<button type="button" data-q="${i}">${esc(q.label)}</button>`).join('');
+function raiseAlert(r, what, detail) {
+  const a = { id: r.id, name: displayName(r), what, detail, t: Date.now() };
+  alerts.unshift(a); alerts = alerts.slice(0, 5);
+  log(`${a.name} ${what}.`, 'alert');
+  toast(`${a.name} ${what}`);
+  flashIds.add(r.id); setTimeout(() => { flashIds.delete(r.id); scheduleRender(); }, 60000);
+  if ($('watchSound').checked) beep();
+  if ($('watchNotify').checked && 'Notification' in window && Notification.permission === 'granted') {
+    try { const n = new Notification(`${a.name} ${what}`, { body: detail || 'Open Mug Finder to attack.', tag: 'mug-' + r.id }); n.onclick = () => { window.focus(); n.close(); }; } catch {}
+  }
+  renderAlerts();
 }
-$('quickChips').addEventListener('click', e => {
-  const c = e.target.closest('button[data-q]'); if (!c) return;
-  const q = QUICK[+c.dataset.q];
-  setForm(q.set, Object.keys(q.set).filter(k => FORM_FIELDS.includes(k)));
-  saveForm(); render();
-});
-
-// ---------- watchlist import / export ----------
-$('watchExport').addEventListener('click', () => {
-  download(`torn-watchlist-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ watch, hidden }, null, 1), 'application/json');
-  toast('Watchlist exported');
-});
-$('watchImportBtn').addEventListener('click', () => $('watchImport').click());
-$('watchImport').addEventListener('change', async e => {
-  const file = e.target.files[0]; if (!file) return;
+function renderAlerts() {
+  $('alerts').innerHTML = alerts.map((a, i) => `<div class="alert-item">${icon('bell')}<div class="what"><b>${esc(a.name)}</b> ${esc(a.what)}${a.detail ? `<div class="when">${esc(a.detail)} · ${fmtAgo(a.t / 1000)}</div>` : `<div class="when">${fmtAgo(a.t / 1000)}</div>`}</div>` +
+    `<a class="btn small primary" href="${attackUrl(a.id)}" target="_blank" rel="noopener">${icon('attack')}Attack</a>` +
+    `<button class="icon-btn" type="button" data-dismiss="${i}" aria-label="Dismiss alert">${icon('x')}</button></div>`).join('');
+}
+$('alerts').addEventListener('click', e => { const b = e.target.closest('[data-dismiss]'); if (b) { alerts.splice(+b.dataset.dismiss, 1); renderAlerts(); } });
+function beep() {
   try {
-    const o = JSON.parse(await file.text());
-    let n = 0;
-    for (const [id, w] of Object.entries(o.watch || {})) {
-      if (!/^\d+$/.test(id)) continue;
-      watch[id] = { name: String(w.name || id).slice(0, 40), note: String(w.note || '').slice(0, 500), t: +w.t || Date.now() }; n++;
-    }
-    for (const [id, name] of Object.entries(o.hidden || {})) if (/^\d+$/.test(id)) hidden[id] = String(name).slice(0, 40);
-    saveWatch(); saveHidden(); ensureWatchRows(); render();
-    toast(`Imported ${plural(n, 'watched player')}`);
-  } catch (err) { log('That file couldn’t be imported: ' + err.message, 'err'); }
-  e.target.value = '';
-});
-$('unhideAll').addEventListener('click', () => {
-  const n = Object.keys(hidden).length;
-  if (!n) { toast('Nobody is hidden'); return; }
-  if (!confirm(`Show all ${plural(n, 'hidden player')} again?`)) return;
-  hidden = {}; saveHidden(); render(); toast('Everyone is visible again');
-});
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.18].forEach(t => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = 880; g.gain.setValueAtTime(0.15, ctx.currentTime + t); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.15); o.connect(g).connect(ctx.destination); o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.16); });
+  } catch {}
+}
+$('watchBtn').addEventListener('click', () => watching ? stopWatching() : startWatching());
+
+// ---------- form persistence ----------
+const FORM_FIELDS = ['rpm', 'source', 'activity', 'factionId', 'startPos', 'count', 'levelSpread', 'fView', 'fFfMax', 'fBsMax', 'fSoldWithin', 'fSalesMin', 'fLvlMin', 'fLvlMax', 'fActive', 'checkCap', 'checkTtl', 'myStats'];
+const FORM_CHECKS = ['autoCheck', 'fKnownOnly', 'fBazaarOpen', 'fAttackable', 'fNoClothing', 'fNoFaction', 'ffsAuto', 'watchSound', 'watchNotify'];
+function getForm() { const o = {}; FORM_FIELDS.forEach(id => o[id] = $(id).value); FORM_CHECKS.forEach(id => o[id] = $(id).checked); return o; }
+function setForm(o) {
+  FORM_FIELDS.forEach(id => { if (o[id] != null) $(id).value = o[id]; });
+  FORM_CHECKS.forEach(id => { if (o[id] != null) $(id).checked = o[id]; });
+  syncSource(); syncView();
+}
+function saveForm() { store.set('tmf_form', getForm()); }
+function loadForm() { const o = store.get('tmf_form', null); if (o) setForm(o); }
+function resetFilters() {
+  ['fFfMax', 'fBsMax', 'fSoldWithin', 'fSalesMin', 'fLvlMin', 'fLvlMax', 'fActive'].forEach(id => $(id).value = '');
+  ['fKnownOnly', 'fBazaarOpen', 'fNoFaction'].forEach(id => $(id).checked = false);
+  saveForm(); render(); toast('Filters cleared');
+}
+
+const QUICK = [
+  { label: 'Sold today', apply: () => { $('fSoldWithin').value = '0'; } },
+  { label: 'Sold this week', apply: () => { $('fSoldWithin').value = '7'; } },
+  { label: 'Bazaar open', apply: () => { $('fBazaarOpen').checked = true; } },
+  { label: 'Easy fights', apply: () => { $('fFfMax').value = '2'; } },
+  { label: 'Idle or offline', apply: () => { $('fActive').value = 'notOnline'; } },
+  { label: 'No faction', apply: () => { $('fNoFaction').checked = true; } },
+];
+$('quickChips').innerHTML = QUICK.map((q, i) => `<button type="button" data-q="${i}">${esc(q.label)}</button>`).join('');
+$('quickChips').addEventListener('click', e => { const c = e.target.closest('button[data-q]'); if (!c) return; QUICK[+c.dataset.q].apply(); saveForm(); render(); });
 
 // ---------- UI wiring ----------
-function buildJobSelect() {
-  const sel = $('fJob');
-  const g1 = document.createElement('optgroup'); g1.label = 'City jobs';
-  CITY_JOBS.forEach(j => g1.append(new Option(j, 'j' + j)));
-  g1.append(new Option('Unemployed', 'none'));
-  const g2 = document.createElement('optgroup'); g2.label = 'Companies';
-  Object.entries(COMPANY_TYPES).sort((a, b) => a[1].localeCompare(b[1])).forEach(([id, n]) => g2.append(new Option(n, 'c' + id)));
-  sel.append(g1, g2);
-  $('fStatus').innerHTML = STATUSES.map(s => `<label class="check"><input type="checkbox" value="${s}">${s}</label>`).join('');
+function syncSource() {
+  const s = $('source').value;
+  $('optActivity').hidden = s !== 'search';
+  $('optFaction').hidden = s !== 'faction';
+  $('optStart').hidden = s !== 'networth';
+  $('optBazaar').hidden = s !== 'bazaar';
+  $('optCount').hidden = s === 'bazaar' || s === 'faction';
 }
-
-function syncMode() {
-  const band = $('mode').value === 'levelband';
-  $('catOpts').hidden = band; $('startWrap').hidden = band; $('bandOpts').hidden = !band;
-  const lo = $('fLvlMin').value, hi = $('fLvlMax').value;
-  $('bandNote').textContent = lo && hi ? `Levels ${lo}–${hi}, from your filters.` : 'Set a level range in Filters, or press “Use my level”.';
-}
-function syncFactionId() { $('fFactionId').hidden = $('fFaction').value !== 'id'; }
-function syncView() {
-  const v = $('fView').value;
-  document.querySelectorAll('.segmented button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
-}
+function syncView() { const v = $('fView').value; document.querySelectorAll('.segmented button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === v))); }
 document.querySelector('.segmented').addEventListener('click', e => {
   const b = e.target.closest('button[data-view]'); if (!b) return;
   $('fView').value = b.dataset.view; syncView(); saveForm(); render();
 });
-
 function openSettings() { if (!$('settings').open) $('settings').showModal(); }
 $('openSettings').addEventListener('click', openSettings);
 $('keyBadge').addEventListener('click', () => { openSettings(); $('apiKey').focus(); });
 $('closeSettings').addEventListener('click', () => $('settings').close());
-$('settings').addEventListener('click', e => { if (e.target === $('settings')) $('settings').close(); });   // click backdrop to close
+$('settings').addEventListener('click', e => { if (e.target === $('settings')) $('settings').close(); });
 $('settings').addEventListener('close', () => render());
+$('toggleFilters').addEventListener('click', () => { const open = document.body.classList.toggle('filters-open'); $('toggleFilters').setAttribute('aria-expanded', String(open)); });
 
-$('toggleFilters').addEventListener('click', () => {
-  const open = document.body.classList.toggle('filters-open');
-  $('toggleFilters').setAttribute('aria-expanded', String(open));
-});
-
-const scanFn = () => withAutoLookup($('mode').value === 'levelband' ? scanLevelBand : scanCategory);
 const onFormChange = e => {
   if (!e.target.closest('#filters, .scanbar, #settings')) return;
   if (['apiKey', 'ffsKey'].includes(e.target.id)) return;
-  if (e.target.id === 'fFaction') syncFactionId();
-  if (['mode', 'fLvlMin', 'fLvlMax'].includes(e.target.id)) syncMode();
+  if (e.target.id === 'source') { syncSource(); cursor = null; }
+  if (e.target.id === 'watchNotify' && e.target.checked && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission();
   saveForm(); scheduleRender();
 };
 document.addEventListener('input', onFormChange);
@@ -1746,70 +1533,52 @@ $('rememberKey').addEventListener('change', () => {
   if (!$('rememberKey').checked) { store.del('tps_key'); store.del('tps_ffs_key'); store.del('tps_key_type'); }
   else { if (apiKey) store.set('tps_key', apiKey); if (ffsKey) store.set('tps_ffs_key', ffsKey); }
 });
-function setFfsKey(k) {
-  ffsKey = k.trim();
-  if (ffsKey && $('rememberKey').checked) store.set('tps_ffs_key', ffsKey); else store.del('tps_ffs_key');
-  render();
-}
+function setFfsKey(k) { ffsKey = k.trim(); if (ffsKey && $('rememberKey').checked) store.set('tps_ffs_key', ffsKey); else store.del('tps_ffs_key'); render(); }
 $('ffsKey').addEventListener('change', () => setFfsKey($('ffsKey').value));
 $('ffsUseTorn').addEventListener('click', () => {
   if (!apiKey) { toast('Save your Torn key first'); $('apiKey').focus(); return; }
   $('ffsKey').value = apiKey; setFfsKey(apiKey); toast('FFScouter will use your Torn key');
 });
 $('rpm').addEventListener('change', () => { $('rpm').value = budget(); });
-$('scanBtn').addEventListener('click', () => runTask('Scan', scanFn()));
-$('continueBtn').addEventListener('click', () => { if (cursor) runTask('Scan', withAutoLookup(scanPages)); });
-$('enrichBtn').addEventListener('click', () => runTask('Detail lookup', enrich));
-$('ffsBtn').addEventListener('click', () => { if (!ffsKey) { openSettings(); $('ffsKey').focus(); return; } runTask('FFScouter', fetchFfs, false); });
-$('factionBtn').addEventListener('click', () => runTask('Faction names', resolveFactions));
+$('scanBtn').addEventListener('click', () => runTask('Find players', findFn()));
+$('continueBtn').addEventListener('click', () => { const fn = continueFn(); if (fn) runTask('Find more', fn); });
+$('checkBtn').addEventListener('click', () => runTask('Check', checkPlayers));
+$('ffsBtn').addEventListener('click', () => { if (!ffsKey) { openSettings(); $('ffsKey').focus(); return; } runTask('Fair Fight', fetchFfs, false); });
 $('myLevelBtn').addEventListener('click', () => runTask('Your level', useMyLevel));
 $('stopBtn').addEventListener('click', () => { stopFlag = true; setStatus('Stopping…'); });
 $('resetFilters').addEventListener('click', resetFilters);
 $('clearBtn').addEventListener('click', () => {
-  if (rows.size && !confirm('Clear all scanned players? Your watchlist, notes and looked-up details are kept.')) return;
-  rows.clear(); cursor = null; ensureWatchRows(); render(); saveRows(); toast('Scanned players cleared');
+  if (rows.size && !confirm('Clear all found players? Your watch list and hidden players are kept.')) return;
+  rows.clear(); cursor = null; ensureWatchRows(); render(); persist(); toast('Found players cleared');
 });
-$('clearCacheBtn').addEventListener('click', () => {
-  profileCache = {}; saveCache();
-  rows.forEach(r => { delete r.enriched; });
-  render(); toast('Looked-up details forgotten');
+$('unhideAll').addEventListener('click', () => {
+  const n = Object.keys(hidden).length;
+  if (!n) { toast('Nobody is hidden'); return; }
+  if (!confirm(`Show all ${plural(n, 'hidden player')} again?`)) return;
+  hidden = {}; saveHidden(); render(); toast('Everyone is visible again');
 });
-$('csvBtn').addEventListener('click', exportCsv);
-$('copyIdsBtn').addEventListener('click', copyIds);
-
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && running && !$('settings').open) { stopFlag = true; e.preventDefault(); }
-  else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !running) { runTask('Scan', scanFn()); e.preventDefault(); }
-  else if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !$('settings').open) {
-    $('filters').closest('.layout') && document.body.classList.add('filters-open');
-    $('fName').closest('details').open = true; $('fName').focus(); e.preventDefault();
-  }
+  else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !running) { runTask('Find players', findFn()); e.preventDefault(); }
 });
 
 // ---------- init ----------
 (async function init() {
-  buildJobSelect();
-  buildChips();
-  buildColMenu();
-  buildPresetSel();
   loadForm();
+  syncSource();
   saveWatch(); saveHidden();
   if (ffsKey) $('ffsKey').value = ffsKey;
   if (apiKey) { $('apiKey').value = apiKey; $('keyInfo').className = 'keystate ok'; $('keyInfo').textContent = 'Key saved in this browser.'; }
   updateKeyBadge();
   render();
-
-  // one-time migration from the old localStorage cache
-  const legacy = store.get('tps_cache', null);
-  profileCache = (await idb.get('cache')) || legacy || {};
-  if (legacy) { store.del('tps_cache'); saveCache(); }
-
+  checks = (await idb.get('checks')) || {};
   ffCache = (await idb.get('ffcache')) || {};
-  const saved = await idb.get('rows');
+  const saved = await idb.get('mugrows');
   if (Array.isArray(saved)) saved.forEach(r => { if (r && r.id) rows.set(r.id, r); });
-  const meta = await idb.get('meta');
-  if (meta) { lastCat = meta.lastCat || lastCat; cursor = meta.cursor || null; }
+  const meta = await idb.get('mugmeta');
+  if (meta) cursor = meta.cursor || null;
   ensureWatchRows();
+  rows.forEach(applyCached);
   if (rows.size) log(`Restored ${plural(rows.size, 'player')} from your last visit.`);
   render();
 })();
