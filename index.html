@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Torn Player Search</title>
+<style>
+  :root {
+    --bg: #111315; --panel: #1a1d20; --panel2: #22262a; --line: #2e3338;
+    --text: #d8dcdf; --muted: #8a939b; --accent: #7fb241; --accent2: #5d8a2c;
+    --warn: #e0a238; --bad: #d9534f; --link: #8cc4ff; --star: #f5c542;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 system-ui, "Segoe UI", Arial, sans-serif; }
+  header { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #0b0c0d; border-bottom: 2px solid var(--accent2); flex-wrap: wrap; }
+  header h1 { font-size: 17px; margin: 0; letter-spacing: .3px; }
+  header h1 span { color: var(--accent); }
+  header .spacer { flex: 1; }
+  main { display: grid; grid-template-columns: 330px 1fr; gap: 12px; padding: 12px 16px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
+  .panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--accent); margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .panel h2 .sub { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 400; }
+  label { display: block; color: var(--muted); font-size: 11.5px; margin: 6px 0 2px; }
+  input, select, button { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 4px; padding: 5px 7px; }
+  input:focus, select:focus { outline: 1px solid var(--accent); }
+  input[type=number] { width: 100%; }
+  input[type=text], input[type=password], select { width: 100%; }
+  input[type=checkbox] { width: auto; margin: 0 4px 0 0; vertical-align: -2px; }
+  .row { display: flex; gap: 6px; align-items: center; }
+  .row > * { flex: 1; min-width: 0; }
+  .row > .dash { flex: 0 0 auto; color: var(--muted); }
+  .row > .fixed { flex: 0 0 auto; }
+  button { cursor: pointer; background: var(--panel2); }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent2); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:hover { background: var(--accent); }
+  button.danger { border-color: var(--bad); color: #ffb3b0; }
+  button.small { padding: 2px 7px; font-size: 11.5px; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+  .hint { color: var(--muted); font-size: 11px; margin-top: 4px; }
+  .checks { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .checks label { display: inline-flex; align-items: center; margin: 2px 0; color: var(--text); font-size: 12px; }
+  select[multiple] { height: 150px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .chip { font-size: 11.5px; padding: 2px 9px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line); cursor: pointer; }
+  .chip:hover { border-color: var(--accent); color: #fff; }
+  #status { font-size: 12px; color: var(--muted); }
+  #status b { color: var(--text); }
+  #rate { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 6px; }
+  #rate .meter { width: 70px; height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; }
+  #rate .meter > div { height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+  .bar { height: 4px; background: var(--panel2); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  #log { max-height: 90px; overflow: auto; font: 11px/1.4 ui-monospace, Consolas, monospace; color: var(--muted); margin-top: 6px; }
+  #log .err { color: var(--bad); } #log .warn { color: var(--warn); }
+  .tablewrap { overflow: auto; max-height: calc(100vh - 170px); border: 1px solid var(--line); border-radius: 6px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  th { position: sticky; top: 0; background: #202428; cursor: pointer; user-select: none; font-weight: 600; color: var(--muted); z-index: 1; }
+  th.nosort { cursor: default; }
+  th:hover { color: var(--text); }
+  th.sorted { color: var(--accent); }
+  tbody tr:hover { background: #1e2226; }
+  tbody tr.watched { background: rgba(245, 197, 66, .05); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.note { max-width: 180px; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+  a { color: var(--link); text-decoration: none; } a:hover { text-decoration: underline; }
+  .ico { cursor: pointer; color: var(--muted); padding: 0 3px; font-size: 13px; background: none; border: 0; }
+  .ico:hover { color: var(--text); }
+  .ico.on { color: var(--star); }
+  .acts a { color: var(--muted); padding: 0 3px; font-size: 13px; }
+  .acts a:hover { color: var(--link); text-decoration: none; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+  .Online { background: #5cb85c; } .Idle { background: #e0a238; } .Offline { background: #666; }
+  .pill { padding: 1px 6px; border-radius: 9px; font-size: 11px; background: var(--panel2); border: 1px solid var(--line); }
+  .st-Hospital { color: #ff8a80; } .st-Jail { color: #ffcc80; } .st-Traveling, .st-Abroad { color: #8cc4ff; } .st-Federal, .st-Fallen { color: #b0a0ff; }
+  .muted { color: var(--muted); }
+  .resulthead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
+  .resulthead .btns { margin: 0; }
+  details summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+  details.tos { font-size: 12px; } details.tos li { margin: 3px 0; }
+  details.cols { position: relative; }
+  details.cols summary { list-style: none; border: 1px solid var(--line); border-radius: 4px; padding: 5px 9px; background: var(--panel2); color: var(--text); font-weight: 400; }
+  details.cols summary::-webkit-details-marker { display: none; }
+  details.cols .menu { position: absolute; right: 0; top: 110%; z-index: 5; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; width: 190px; box-shadow: 0 6px 20px #0008; }
+  details.cols .menu label { color: var(--text); font-size: 12px; margin: 3px 0; }
+  .keyinfo { font-size: 11.5px; margin-top: 4px; }
+  .keyinfo.bad { color: var(--warn); } .keyinfo.ok { color: var(--accent); }
+  kbd { font: 10.5px ui-monospace, Consolas, monospace; background: var(--panel2); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
+  #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--accent2); color: #fff; padding: 7px 14px; border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Torn <span>Player Search</span></h1>
+  <div class="spacer"></div>
+  <div id="rate" title="API calls this tool made in the last 60 seconds vs. your budget"><span>API</span><div class="meter"><div id="rateBar"></div></div><span id="rateText">0/80</span></div>
+  <div id="status">Idle</div>
+</header>
+
+<main>
+<aside>
+  <!-- API key -->
+  <div class="panel">
+    <h2>API key</h2>
+    <div class="row">
+      <input type="password" id="apiKey" placeholder="Public-access key recommended" autocomplete="off">
+      <button id="saveKey" class="fixed">Save</button>
+    </div>
+    <label><input type="checkbox" id="rememberKey" checked> Remember in this browser</label>
+    <div id="keyInfo" class="keyinfo"></div>
+    <label>Request budget per minute (hard cap 100 = Torn's limit across all your keys)</label>
+    <input type="number" id="rpm" value="80" min="5" max="100">
+    <div class="hint">80 leaves room for other Torn tools you run (TornTools, TornStats, faction bots…).</div>
+  </div>
+
+  <!-- Scan -->
+  <div class="panel">
+    <h2>1 · Scan Hall of Fame</h2>
+    <label>Mode</label>
+    <select id="mode">
+      <option value="category">Browse a HoF category from a position</option>
+      <option value="levelband">Level band (jumps straight to your level range)</option>
+    </select>
+    <div id="catOpts">
+      <label>Category</label>
+      <select id="cat">
+        <option value="networth">Networth</option>
+        <option value="level">Level</option>
+        <option value="rank">Rank</option>
+        <option value="awards">Awards</option>
+        <option value="workstats">Working stats</option>
+        <option value="attacks">Attacks</option>
+        <option value="defends">Defends</option>
+        <option value="offences">Offences</option>
+        <option value="revives">Revives</option>
+        <option value="busts">Busts</option>
+        <option value="traveltime">Travel time</option>
+        <option value="racingskill">Racing skill</option>
+        <option value="racingpoints">Racing points</option>
+        <option value="racingwins">Racing wins</option>
+      </select>
+      <label>Start at HoF position</label>
+      <input type="number" id="startPos" value="1" min="1">
+    </div>
+    <div id="bandOpts" hidden>
+      <div class="hint">Uses the Level HoF and finds your band with a quick binary search (~20–25 calls), then scans down. Level min/max come from the filters below.</div>
+    </div>
+    <label>Pages per scan (100 players per page = 1 call)</label>
+    <input type="number" id="maxPages" value="20" min="1" max="500">
+    <label><input type="checkbox" id="autoLookup"> Automatically run the detailed lookup after each scan</label>
+    <div class="btns">
+      <button class="primary" id="scanBtn" title="Ctrl+Enter">Scan</button>
+      <button id="continueBtn" disabled title="Scan the next pages from where the last scan stopped">Continue ▸</button>
+      <button id="myLevelBtn" title="Uses 1 call to read your own level">Use my level ±</button>
+      <input type="number" id="levelSpread" value="3" min="0" style="width:52px;flex:0 0 auto" title="Level spread">
+    </div>
+    <div class="btns">
+      <button class="danger" id="stopBtn" disabled title="Esc">Stop</button>
+      <button id="clearBtn">Clear results</button>
+    </div>
+    <div class="bar"><div id="progress"></div></div>
+    <div id="log"></div>
+  </div>
+
+  <!-- Presets -->
+  <div class="panel">
+    <h2>Presets <button class="small" id="resetFilters" title="Clear every filter">Reset filters</button></h2>
+    <div class="row">
+      <select id="presetSel"><option value="">Saved presets…</option></select>
+      <button class="fixed small" id="presetSave" title="Save current scan settings + filters">Save</button>
+      <button class="fixed small" id="presetDel" title="Delete selected preset">✕</button>
+    </div>
+    <div class="chips" id="quickChips"></div>
+  </div>
+
+  <!-- Free filters -->
+  <div class="panel">
+    <h2>Filters · free <span class="sub">(from HoF data)</span></h2>
+    <label>Show</label>
+    <select id="fView">
+      <option value="all">All scanned players (except hidden)</option>
+      <option value="watch">Watchlist only</option>
+      <option value="hidden">Hidden players only</option>
+    </select>
+    <label>Level</label>
+    <div class="row"><input type="number" id="fLvlMin" placeholder="min"><span class="dash">–</span><input type="number" id="fLvlMax" placeholder="max"></div>
+    <label>Last action (time since)</label>
+    <div class="row">
+      <input type="number" id="fLaMin" placeholder="min" step="any"><span class="dash">–</span>
+      <input type="number" id="fLaMax" placeholder="max" step="any">
+      <select id="fLaUnit" style="flex:0 0 76px"><option value="3600">hours</option><option value="86400" selected>days</option></select>
+    </div>
+    <div class="hint">e.g. max 1 day = played in the last day; min 30 days = inactive for 30+ days.</div>
+    <label>Account age (days)</label>
+    <div class="row"><input type="number" id="fAgeMin" placeholder="min"><span class="dash">–</span><input type="number" id="fAgeMax" placeholder="max"></div>
+    <label>Faction</label>
+    <div class="row">
+      <select id="fFaction"><option value="">Any</option><option value="none">No faction</option><option value="in">In a faction</option><option value="id">Specific ID →</option></select>
+      <input type="number" id="fFactionId" placeholder="faction id">
+    </div>
+    <label>Name contains</label>
+    <input type="text" id="fName">
+    <label>Networth (accepts 500m, 2.5b, …)</label>
+    <div class="row"><input type="text" id="fNwMin" placeholder="min"><span class="dash">–</span><input type="text" id="fNwMax" placeholder="max"></div>
+    <div class="hint">Networth is free when scanning the Networth category; otherwise it is filled in by the lookup step.</div>
+  </div>
+
+  <!-- Enrichment filters -->
+  <div class="panel">
+    <h2>2 · Detailed lookup <span class="sub">(1 call / player)</span></h2>
+    <label>Job / company type <span class="muted">(ctrl/shift-click for several)</span></label>
+    <select id="fJob" multiple></select>
+    <label>Position contains</label>
+    <input type="text" id="fPos" placeholder="e.g. Director">
+    <label>Company stars (min)</label>
+    <input type="number" id="fStars" min="0" max="10">
+    <label>Current status</label>
+    <div class="checks" id="fStatus"></div>
+    <label>Donator</label>
+    <select id="fDonator"><option value="">Any</option><option value="yes">Donator / Subscriber</option><option value="no">Not donator</option></select>
+    <label>Property contains</label>
+    <input type="text" id="fProp" placeholder="e.g. Private Island">
+    <label>Max players to look up per run</label>
+    <input type="number" id="enrichCap" value="200" min="1">
+    <label>Reuse cached lookups younger than (hours)</label>
+    <input type="number" id="cacheHours" value="12" min="0">
+    <div class="btns">
+      <button class="primary" id="enrichBtn">Look up matching players</button>
+      <button id="clearCacheBtn">Clear cache</button>
+    </div>
+    <div class="hint">Looks up only players that pass the free filters and have no fresh cached data. While detailed filters are set, players that haven't been looked up yet are hidden. In <i>Watchlist only</i> view this refreshes your watchlist.</div>
+  </div>
+
+  <!-- Watchlist -->
+  <div class="panel">
+    <h2>Watchlist <span class="sub" id="watchCount">0 players</span></h2>
+    <div class="hint" style="margin-top:0">Click ☆ on any row to watch a player, ✎ to add a note, ⊘ to hide them from results.</div>
+    <div class="btns">
+      <button class="small" id="watchExport">Export</button>
+      <button class="small" id="watchImportBtn">Import</button>
+      <input type="file" id="watchImport" accept=".json,application/json" hidden>
+      <button class="small" id="unhideAll">Un-hide all</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <details class="tos">
+      <summary>Torn API ToS: how this tool uses your key</summary>
+      <ul>
+        <li><b>Data storage:</b> Only in your own browser (localStorage + IndexedDB): scan results, cached player/faction lookups, watchlist, notes, presets and, if ticked, your key. Nothing is sent anywhere except api.torn.com.</li>
+        <li><b>Data sharing:</b> None. No server, no analytics, no third parties.</li>
+        <li><b>Purpose of use:</b> Personal player search over public Hall of Fame / profile data.</li>
+        <li><b>Key storage &amp; sharing:</b> Kept locally only; never shared. Untick "Remember" to keep it in memory for this tab only.</li>
+        <li><b>Key access level:</b> <b>Public</b> is enough. All endpoints used (torn/hof, user/{id} profile, job, personalstats, faction/{id}/basic) are public.</li>
+        <li><b>Rate limits:</b> Throttled to your chosen budget (default 80/min, hard cap 100/min = Torn's per-user limit). It stops immediately on invalid-key or ban errors and backs off on "too many requests".</li>
+      </ul>
+    </details>
+    <div class="hint">Shortcuts: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> scan · <kbd>Esc</kbd> stop · <kbd>/</kbd> focus name filter</div>
+  </div>
+</aside>
+
+<section>
+  <div class="resulthead">
+    <div><b id="countShown">0</b> shown <span class="muted">of <span id="countTotal">0</span> scanned · <span id="countEnriched">0</span> looked up</span></div>
+    <div class="btns">
+      <button id="factionBtn" title="Look up names for factions in the shown rows (1 call per faction, cached 7 days)">Resolve faction names</button>
+      <button id="copyIdsBtn" title="Copy shown player IDs to clipboard">Copy IDs</button>
+      <button id="csvBtn">Export CSV</button>
+      <details class="cols"><summary>Columns ▾</summary><div class="menu" id="colMenu"></div></details>
+    </div>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr id="thead"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div class="hint" id="renderNote"></div>
+</section>
+</main>
+<div id="toast"></div>
+
+<script>
+'use strict';
+const API = 'https://api.torn.com/v2';
+const COMMENT = 'PlayerSearch';
+const $ = id => document.getElementById(id);
+
+// ---------- static data ----------
+const COMPANY_TYPES = {1:'Hair Salon',2:'Law Firm',3:'Flower Shop',4:'Car Dealership',5:'Clothing Store',6:'Gun Shop',7:'Game Shop',8:'Candle Shop',9:'Toy Shop',10:'Adult Novelties',11:'Cyber Cafe',12:'Grocery Store',13:'Theater',14:'Sweet Shop',15:'Cruise Line',16:'Television Network',18:'Zoo',19:'Firework Stand',20:'Property Broker',21:'Furniture Store',22:'Gas Station',23:'Music Store',24:'Nightclub',25:'Pub',26:'Gents Strip Club',27:'Restaurant',28:'Oil Rig',29:'Fitness Center',30:'Mechanic Shop',31:'Amusement Park',32:'Lingerie Store',33:'Meat Warehouse',34:'Farm',35:'Software Corporation',36:'Ladies Strip Club',37:'Private Security Firm',38:'Mining Corporation',39:'Detective Agency',40:'Logistics Management'};
+const CITY_JOBS = ['Army','Casino','Education','Grocer','Law','Medical'];
+const STATUSES = ['Okay','Hospital','Jail','Traveling','Abroad','Federal','Fallen'];
+const DEFAULT_RPM = 80;
+
+// ---------- storage: localStorage for small settings, IndexedDB for bulk data ----------
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
+  del(k) { try { localStorage.removeItem(k); } catch {} }
+};
+const idb = {
+  db: null,
+  open() {
+    if (!this.db) this.db = new Promise((res, rej) => {
+      const r = indexedDB.open('torn-player-search', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('kv');
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+    return this.db;
+  },
+  async get(k) {
+    try {
+      const db = await this.open();
+      return await new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+    } catch { return undefined; }
+  },
+  async set(k, v) {
+    try {
+      const db = await this.open();
+      await new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); });
+      return true;
+    } catch { return false; }
+  }
+};
+
+// ---------- state ----------
+let apiKey = store.get('tps_key', '') || '';
+let running = false, stopFlag = false;
+const rows = new Map();                        // id -> row
+let profileCache = {};                         // id -> {t, d}   (IndexedDB)
+let watch = store.get('tps_watch', {});        // id -> {name, note, t}
+let hidden = store.get('tps_hidden', {});      // id -> name
+let factions = store.get('tps_factions', {});  // id -> {name, tag, t}
+let presets = store.get('tps_presets', {});    // name -> form
+let hiddenCols = new Set(store.get('tps_cols', ['hofpos', 'property']));
+let sortKey = 'networth', sortDir = -1;
+let lastCat = 'networth';
+let cursor = null;                             // where "Continue" resumes: {cat, offset, lvlMin}
+
+class StopError extends Error {}
+class FatalApiError extends Error {}
+
+// ---------- logging / status ----------
+function log(msg, cls) {
+  const d = document.createElement('div');
+  if (cls) d.className = cls;
+  d.textContent = new Date().toLocaleTimeString() + '  ' + msg;
+  $('log').prepend(d);
+  while ($('log').childNodes.length > 60) $('log').lastChild.remove();
+}
+function setStatus(html) { $('status').innerHTML = html; }
+function setProgress(frac) { $('progress').style.width = Math.max(0, Math.min(1, frac)) * 100 + '%'; }
+let toastTimer;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1800); }
+
+// ---------- rate limiter (sliding 60s window: never more than `budget` calls in ANY 60s span) ----------
+const budget = () => Math.max(5, Math.min(100, Math.floor(+$('rpm').value) || DEFAULT_RPM));
+const limiter = {
+  stamps: [],
+  pauseUntil: 0,
+  used() { const now = Date.now(); this.stamps = this.stamps.filter(t => now - t < 60000); return this.stamps.length; },
+  async take() {
+    for (;;) {
+      if (stopFlag) throw new StopError();
+      const now = Date.now();
+      if (now >= this.pauseUntil && this.used() < budget()) { this.stamps.push(now); return; }
+      const wait = now < this.pauseUntil ? this.pauseUntil - now : 60000 - (now - this.stamps[0]) + 25;
+      setStatus(`Rate budget reached, waiting <b>${Math.ceil(wait / 1000)}s</b>…`);
+      await sleep(Math.min(wait, 500));
+    }
+  }
+};
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+setInterval(() => {
+  const u = limiter.used(), b = budget();
+  $('rateText').textContent = `${u}/${b}`;
+  $('rateBar').style.width = Math.min(100, u / b * 100) + '%';
+  $('rateBar').style.background = u >= b ? 'var(--warn)' : 'var(--accent)';
+}, 1000);
+
+// ---------- API ----------
+async function api(path, params = {}) {
+  if (!apiKey) throw new FatalApiError('No API key set.');
+  for (let attempt = 0; attempt < 4; attempt++) {
+    await limiter.take();
+    const q = new URLSearchParams({ ...params, key: apiKey, comment: COMMENT });
+    let data;
+    try {
+      const res = await fetch(`${API}${path}?${q}`);
+      data = await res.json();
+    } catch (e) {
+      log(`Network error on ${path}: ${e.message}. Retrying…`, 'warn');
+      await sleep(2000 * (attempt + 1));
+      continue;
+    }
+    if (!data.error) return data;
+    const { code, error } = data.error;
+    if ([2, 10, 13, 18].includes(code)) {        // bad/paused/disabled key: stop to avoid IP ban for repeated invalid-key calls
+      forgetKey();
+      throw new FatalApiError(`Key problem (code ${code}: ${error}). Key cleared; please enter a valid key.`);
+    }
+    if ([8, 9, 14].includes(code)) throw new FatalApiError(`API unavailable (code ${code}: ${error}).`);
+    if (code === 16) throw new FatalApiError(`Key access level too low (code 16: ${error}).`);
+    if (code === 5) {                            // too many requests: back off a full minute
+      limiter.pauseUntil = Date.now() + 61000;
+      log('Torn says too many requests (code 5). Pausing 60s. Other tools may be using your limit.', 'warn');
+      continue;
+    }
+    if (code === 17 || code === 0) { await sleep(3000); continue; } // backend/unknown: brief retry
+    return data; // other errors (e.g. 6 incorrect ID): caller handles
+  }
+  throw new Error(`Giving up on ${path} after retries.`);
+}
+
+function forgetKey() {
+  apiKey = '';
+  store.del('tps_key');
+  $('apiKey').value = '';
+  $('keyInfo').textContent = '';
+}
+
+// ---------- key handling ----------
+async function saveKey() {
+  const k = $('apiKey').value.trim();
+  if (!/^[A-Za-z0-9]{16}$/.test(k)) { $('keyInfo').className = 'keyinfo bad'; $('keyInfo').textContent = 'Keys are 16 letters/numbers.'; return; }
+  apiKey = k;
+  if ($('rememberKey').checked) store.set('tps_key', k); else store.del('tps_key');
+  try {
+    const d = await api('/key/info');
+    if (d.error) throw new Error(d.error.error);
+    const lvl = d.info.access.type;
+    const el = $('keyInfo');
+    if (/full|limited/i.test(lvl)) {
+      el.className = 'keyinfo bad';
+      el.textContent = `Key OK (${lvl}). This tool only needs a Public key. Consider making a separate Public key for it.`;
+    } else {
+      el.className = 'keyinfo ok';
+      el.textContent = `Key OK (${lvl}).`;
+    }
+  } catch (e) {
+    $('keyInfo').className = 'keyinfo bad';
+    $('keyInfo').textContent = e.message;
+  }
+}
+
+// ---------- parsing / formatting ----------
+function parseMoney(s) {
+  s = String(s || '').trim().toLowerCase().replace(/[$,\s]/g, '');
+  if (!s) return null;
+  const m = s.match(/^(\d*\.?\d+)([kmbt]?)$/);
+  if (!m) return null;
+  return +m[1] * ({ '': 1, k: 1e3, m: 1e6, b: 1e9, t: 1e12 })[m[2]];
+}
+const numOrNull = id => { const v = $(id).value.trim(); return v === '' ? null : +v; };
+function fmtMoney(n) {
+  if (n == null) return '';
+  const a = Math.abs(n);
+  if (a >= 1e12) return '$' + (n / 1e12).toFixed(2) + 't';
+  if (a >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'b';
+  if (a >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'm';
+  if (a >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'k';
+  return '$' + n;
+}
+function fmtAgo(ts) {
+  if (!ts) return '';
+  const s = Date.now() / 1000 - ts;
+  if (s < 60) return 'now';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  if (s < 86400 * 365) return Math.floor(s / 86400) + 'd ago';
+  return (s / 86400 / 365).toFixed(1) + 'y ago';
+}
+const fmtDate = ts => ts ? new Date(ts * 1000).toLocaleString() : '';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function decodeEntities(s) { const t = document.createElement('textarea'); t.innerHTML = s; return t.value; }
+
+// ---------- data model ----------
+function upsertHof(h, cat) {
+  let r = rows.get(h.id);
+  if (!r) { r = { id: h.id, hof: {} }; rows.set(h.id, r); applyCached(r); }
+  delete r.stub;
+  r.name = h.username;
+  r.level = h.level;
+  r.faction_id = h.faction_id || 0;
+  r.last_action = Math.max(h.last_action || 0, r.last_action || 0);
+  r.age = h.age_in_days;
+  r.signed_up = h.signed_up;
+  r.rank = h.rank_name;
+  r.hof[cat] = { value: h.value, pos: h.position };
+  if (cat === 'networth') r.networth = h.value;
+  return r;
+}
+
+function applyEnriched(r, d) {
+  const p = d.profile || {};
+  r.enriched = true;
+  if (p.name) r.name = p.name;
+  if (p.level) r.level = p.level;
+  if (p.age != null) r.age = p.age;
+  if (p.signed_up) r.signed_up = p.signed_up;
+  r.faction_id = p.faction_id || 0;
+  if (p.last_action) { r.last_action = Math.max(p.last_action.timestamp, r.last_action || 0); r.online = p.last_action.status; }
+  r.status = p.status ? p.status.state : null;
+  r.statusDesc = p.status ? p.status.description : '';
+  r.donator = p.donator_status || null;
+  r.property = p.property ? p.property.name : '';
+  r.rank = p.rank || r.rank;
+  const j = d.job;
+  r.companyId = null;
+  if (!j) { r.jobKey = 'none'; r.jobLabel = 'Unemployed'; r.position = ''; r.stars = null; r.company = ''; }
+  else if (j.type === 'company') {
+    r.jobKey = 'c' + j.type_id;
+    r.jobLabel = COMPANY_TYPES[j.type_id] || ('Company type ' + j.type_id);
+    r.company = decodeEntities(j.name || '');
+    r.companyId = j.id;
+    r.position = j.position;
+    r.stars = j.rating;
+  } else {
+    r.jobKey = 'j' + j.name;
+    r.jobLabel = j.name + ' (city job)';
+    r.company = '';
+    r.position = j.position;
+    r.stars = null;
+  }
+  const nw = (d.personalstats || []).find(s => s.name === 'networth');
+  if (nw && !r.hof.networth) r.networth = nw.value;   // HoF networth is fresher when we have it
+  if (watch[r.id] && r.name) watch[r.id].name = r.name;
+}
+
+function applyCached(r) {
+  const c = profileCache[r.id];
+  if (c && c.d) applyEnriched(r, c.d);
+}
+
+function cacheFresh(id) {
+  const c = profileCache[id];
+  const hrs = +$('cacheHours').value || 0;
+  return c && (Date.now() - c.t) < hrs * 3600e3;
+}
+
+async function saveCache() {
+  const ids = Object.keys(profileCache);
+  if (ids.length > 20000) {
+    ids.sort((a, b) => profileCache[a].t - profileCache[b].t).slice(0, ids.length - 20000).forEach(id => delete profileCache[id]);
+  }
+  if (!(await idb.set('cache', profileCache)) && !saveCache.warned) {
+    saveCache.warned = true;
+    log('Could not save lookup cache (browser storage blocked). Lookups will only be cached for this tab.', 'warn');
+  }
+}
+
+async function saveRows() {
+  const list = [...rows.values()];
+  await idb.set('rows', list.slice(-15000));
+  await idb.set('meta', { lastCat, cursor });
+}
+
+// Make sure every watchlisted player has a row, so the watchlist view works even for players not scanned yet.
+function ensureWatchRows() {
+  for (const id of Object.keys(watch)) {
+    const n = +id;
+    if (!rows.has(n)) { const r = { id: n, name: watch[id].name || String(n), hof: {}, stub: true }; rows.set(n, r); applyCached(r); }
+  }
+}
+
+function saveWatch() { store.set('tps_watch', watch); const n = Object.keys(watch).length; $('watchCount').textContent = `${n} player${n === 1 ? '' : 's'}`; }
+function saveHidden() { store.set('tps_hidden', hidden); }
+
+// ---------- filters ----------
+function viewFilter() {
+  const v = $('fView').value;
+  if (v === 'watch') return r => !!watch[r.id];
+  if (v === 'hidden') return r => !!hidden[r.id];
+  return r => !hidden[r.id] && !r.stub;
+}
+
+function baseFilter() {
+  const f = {
+    lvlMin: numOrNull('fLvlMin'), lvlMax: numOrNull('fLvlMax'),
+    laMin: numOrNull('fLaMin'), laMax: numOrNull('fLaMax'), laUnit: +$('fLaUnit').value,
+    ageMin: numOrNull('fAgeMin'), ageMax: numOrNull('fAgeMax'),
+    faction: $('fFaction').value, factionId: numOrNull('fFactionId'),
+    name: $('fName').value.trim().toLowerCase(),
+    nwMin: parseMoney($('fNwMin').value), nwMax: parseMoney($('fNwMax').value),
+  };
+  const view = viewFilter();
+  const now = Date.now() / 1000;
+  return r => {
+    if (!view(r)) return false;
+    if (f.lvlMin != null && r.level < f.lvlMin) return false;
+    if (f.lvlMax != null && r.level > f.lvlMax) return false;
+    if (r.last_action) {
+      const since = (now - r.last_action) / f.laUnit;
+      if (f.laMin != null && since < f.laMin) return false;
+      if (f.laMax != null && since > f.laMax) return false;
+    }
+    if (f.ageMin != null && r.age < f.ageMin) return false;
+    if (f.ageMax != null && r.age > f.ageMax) return false;
+    if (f.faction === 'none' && r.faction_id) return false;
+    if (f.faction === 'in' && !r.faction_id) return false;
+    if (f.faction === 'id' && f.factionId != null && r.faction_id !== f.factionId) return false;
+    if (f.name && !String(r.name).toLowerCase().includes(f.name)) return false;
+    // networth: only filter when known; unknown networth is resolved by lookup
+    if ((f.nwMin != null || f.nwMax != null) && r.networth != null) {
+      if (f.nwMin != null && r.networth < f.nwMin) return false;
+      if (f.nwMax != null && r.networth > f.nwMax) return false;
+    }
+    return true;
+  };
+}
+
+function detailFilter() {
+  const f = {
+    jobs: new Set([...$('fJob').selectedOptions].map(o => o.value)), pos: $('fPos').value.trim().toLowerCase(),
+    stars: numOrNull('fStars'), statuses: new Set([...document.querySelectorAll('#fStatus input:checked')].map(i => i.value)),
+    donator: $('fDonator').value, prop: $('fProp').value.trim().toLowerCase(),
+    nwSet: parseMoney($('fNwMin').value) != null || parseMoney($('fNwMax').value) != null,
+  };
+  const active = f.jobs.size || f.pos || f.stars != null || f.statuses.size || f.donator || f.prop;
+  const fn = r => {
+    if (!active && !f.nwSet) return true;
+    if (f.nwSet && r.networth == null) return false;     // networth filter needs a known value
+    if (!active) return true;
+    if (!r.enriched) return false;
+    if (f.jobs.size && !f.jobs.has(r.jobKey)) return false;
+    if (f.pos && !String(r.position || '').toLowerCase().includes(f.pos)) return false;
+    if (f.stars != null && (r.stars == null || r.stars < f.stars)) return false;
+    if (f.statuses.size && !f.statuses.has(r.status)) return false;
+    if (f.donator === 'yes' && !r.donator) return false;
+    if (f.donator === 'no' && r.donator) return false;
+    if (f.prop && !String(r.property || '').toLowerCase().includes(f.prop)) return false;
+    return true;
+  };
+  fn.needsLookup = r => (active || (f.nwSet && r.networth == null)) && !cacheFresh(r.id);
+  fn.active = active || f.nwSet;
+  return fn;
+}
+
+// ---------- table ----------
+const profileUrl = id => `https://www.torn.com/profiles.php?XID=${id}`;
+const COLS = [
+  { key: 'act', label: '', nosort: true, fixed: true, render: r =>
+      `<button class="ico ${watch[r.id] ? 'on' : ''}" data-act="watch" title="${watch[r.id] ? 'Remove from' : 'Add to'} watchlist">${watch[r.id] ? '★' : '☆'}</button>` +
+      `<button class="ico" data-act="note" title="Add / edit note">✎</button>` +
+      `<button class="ico" data-act="hide" title="${hidden[r.id] ? 'Un-hide' : 'Hide from results'}">${hidden[r.id] ? '↺' : '⊘'}</button>` },
+  { key: 'name', label: 'Player', fixed: true, render: r => `<a href="${profileUrl(r.id)}" target="_blank" rel="noopener">${esc(r.name)}</a> <span class="muted">[${r.id}]</span>` },
+  { key: 'level', label: 'Lvl', num: true },
+  { key: 'networth', label: 'Networth', num: true, render: r => r.networth == null ? '<span class="muted">?</span>' : fmtMoney(r.networth) },
+  { key: 'hofval', label: 'HoF value', num: true, get: r => r.hof[lastCat] ? r.hof[lastCat].value : null, render: r => r.hof[lastCat] ? Number(r.hof[lastCat].value).toLocaleString() : '' },
+  { key: 'hofpos', label: 'HoF #', num: true, get: r => r.hof[lastCat] ? r.hof[lastCat].pos : null, render: r => r.hof[lastCat] ? r.hof[lastCat].pos.toLocaleString() : '' },
+  { key: 'last_action', label: 'Last action', get: r => r.last_action ? -r.last_action : null, render: r => `<span title="${esc(fmtDate(r.last_action))}">${r.online ? `<span class="dot ${r.online}"></span>` : ''}${fmtAgo(r.last_action)}</span>` },
+  { key: 'age', label: 'Age (d)', num: true, render: r => r.age == null ? '' : `<span title="Signed up ${esc(fmtDate(r.signed_up))}">${r.age.toLocaleString()}</span>` },
+  { key: 'jobLabel', label: 'Job', render: r => r.enriched ? esc(r.jobLabel) : '<span class="muted">–</span>' },
+  { key: 'position', label: 'Position', render: r => esc(r.position || '') },
+  { key: 'stars', label: '★', num: true, render: r => r.stars == null ? '' : r.stars },
+  { key: 'company', label: 'Company', render: r => r.companyId ? `<a href="https://www.torn.com/joblist.php#/p=corpinfo&ID=${r.companyId}" target="_blank" rel="noopener">${esc(r.company)}</a>` : '' },
+  { key: 'faction', label: 'Faction', get: r => r.faction_id ? (factions[r.faction_id] ? factions[r.faction_id].name : 'zz' + r.faction_id) : null, render: r => {
+      if (!r.faction_id) return '<span class="muted">none</span>';
+      const f = factions[r.faction_id];
+      return `<a href="https://www.torn.com/factions.php?step=profile&ID=${r.faction_id}" target="_blank" rel="noopener">${f ? esc(f.tag ? `[${f.tag}] ${f.name}` : f.name) : r.faction_id}</a>`;
+    } },
+  { key: 'status', label: 'Status', render: r => r.status ? `<span class="st-${esc(r.status)}" title="${esc(r.statusDesc)}">${esc(r.status)}</span>` : '' },
+  { key: 'donator', label: 'Donator', render: r => r.donator ? `<span class="pill">${esc(r.donator)}</span>` : '' },
+  { key: 'property', label: 'Property', render: r => esc(r.property || '') },
+  { key: 'note', label: 'Note', get: r => watch[r.id]?.note || null, render: r => { const n = watch[r.id]?.note; return n ? `<span title="${esc(n)}">${esc(n)}</span>` : ''; }, cls: 'note' },
+  { key: 'links', label: 'Quick links', nosort: true, render: r => `<span class="acts">` +
+      `<a href="https://www.torn.com/loader.php?sid=attack&user2ID=${r.id}" target="_blank" rel="noopener" title="Attack">⚔</a>` +
+      `<a href="https://www.torn.com/messages.php#/p=compose&XID=${r.id}" target="_blank" rel="noopener" title="Send message">✉</a>` +
+      `<a href="https://www.torn.com/trade.php#step=start&userID=${r.id}" target="_blank" rel="noopener" title="Start trade">⇄</a>` +
+      `<a href="https://www.torn.com/bazaar.php?userId=${r.id}" target="_blank" rel="noopener" title="Bazaar">🛒</a>` +
+      `<a href="https://www.torn.com/friendlist.php#/p=add&XID=${r.id}" target="_blank" rel="noopener" title="Add friend">＋</a></span>` },
+];
+
+const colValue = (c, r) => c.get ? c.get(r) : r[c.key];
+const shownCols = () => COLS.filter(c => c.fixed || !hiddenCols.has(c.key));
+
+function renderHead() {
+  $('thead').innerHTML = shownCols().map(c => `<th data-k="${c.key}" class="${c.nosort ? 'nosort' : ''} ${c.key === sortKey ? 'sorted' : ''}">${c.key === 'hofval' ? esc(lastCat) : c.label}${c.key === sortKey ? (sortDir < 0 ? ' ▾' : ' ▴') : ''}</th>`).join('');
+}
+
+function visibleRows() {
+  const b = baseFilter(), d = detailFilter();
+  return [...rows.values()].filter(r => b(r) && d(r));
+}
+
+let renderQueued = false;
+function scheduleRender() { if (!renderQueued) { renderQueued = true; requestAnimationFrame(() => { renderQueued = false; render(); }); } }
+
+const RENDER_LIMIT = 2000;
+function render() {
+  const vis = visibleRows();
+  const col = COLS.find(c => c.key === sortKey) || COLS[1];
+  vis.sort((a, b) => {
+    const x = colValue(col, a), y = colValue(col, b);
+    if (x == null && y == null) return 0;
+    if (x == null) return 1; if (y == null) return -1;
+    if (typeof x === 'string') return sortDir * x.localeCompare(y);
+    return sortDir * (x - y);
+  });
+  renderHead();
+  const cols = shownCols();
+  $('tbody').innerHTML = vis.slice(0, RENDER_LIMIT).map(r =>
+    `<tr data-id="${r.id}" class="${watch[r.id] ? 'watched' : ''}">` + cols.map(c => `<td class="${c.num ? 'num' : ''} ${c.cls || ''}">${c.render ? c.render(r) : esc(colValue(c, r) ?? '')}</td>`).join('') + '</tr>'
+  ).join('');
+  let scanned = 0, enriched = 0;
+  rows.forEach(r => { if (!r.stub) scanned++; if (r.enriched) enriched++; });
+  $('countShown').textContent = vis.length.toLocaleString();
+  $('countTotal').textContent = scanned.toLocaleString();
+  $('countEnriched').textContent = enriched.toLocaleString();
+  $('renderNote').textContent = vis.length > RENDER_LIMIT ? `Showing first ${RENDER_LIMIT} rows. Narrow the filters or export CSV for everything.` : '';
+  $('continueBtn').disabled = running || !cursor;
+}
+setInterval(() => { if (!running) scheduleRender(); }, 60000);   // keep "x ago" fresh
+
+$('thead').addEventListener('click', e => {
+  const th = e.target.closest('th'); if (!th) return;
+  const k = th.dataset.k;
+  if (COLS.find(c => c.key === k)?.nosort) return;
+  if (k === sortKey) sortDir = -sortDir; else { sortKey = k; sortDir = ['name', 'jobLabel', 'faction', 'note', 'position', 'company'].includes(k) ? 1 : -1; }
+  render();
+});
+
+$('tbody').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-act]'); if (!btn) return;
+  const id = +btn.closest('tr').dataset.id;
+  const r = rows.get(id);
+  const act = btn.dataset.act;
+  if (act === 'watch') {
+    if (watch[id]) delete watch[id]; else watch[id] = { name: r?.name || String(id), note: '', t: Date.now() };
+    saveWatch();
+  } else if (act === 'note') {
+    const cur = watch[id]?.note || '';
+    const n = prompt(`Note for ${r?.name || id} (adds them to your watchlist):`, cur);
+    if (n == null) return;
+    if (!watch[id]) watch[id] = { name: r?.name || String(id), note: '', t: Date.now() };
+    watch[id].note = n.trim();
+    saveWatch();
+  } else if (act === 'hide') {
+    if (hidden[id]) delete hidden[id]; else hidden[id] = r?.name || String(id);
+    saveHidden();
+  }
+  render();
+});
+
+// ---------- column menu ----------
+function buildColMenu() {
+  $('colMenu').innerHTML = COLS.filter(c => !c.fixed).map(c =>
+    `<label><input type="checkbox" data-col="${c.key}" ${hiddenCols.has(c.key) ? '' : 'checked'}>${c.key === 'hofval' ? 'HoF value' : c.label === '★' ? 'Company stars' : c.label}</label>`).join('');
+}
+$('colMenu').addEventListener('change', e => {
+  const k = e.target.dataset.col; if (!k) return;
+  if (e.target.checked) hiddenCols.delete(k); else hiddenCols.add(k);
+  store.set('tps_cols', [...hiddenCols]);
+  render();
+});
+document.addEventListener('click', e => { const d = document.querySelector('details.cols'); if (d.open && !d.contains(e.target)) d.open = false; });
+
+// ---------- running tasks ----------
+const TASK_BTNS = ['scanBtn', 'continueBtn', 'enrichBtn', 'myLevelBtn', 'factionBtn'];
+async function runTask(name, fn) {
+  if (running) return;
+  if (!apiKey) { log('Enter and save an API key first.', 'err'); $('apiKey').focus(); return; }
+  running = true; stopFlag = false;
+  $('stopBtn').disabled = false;
+  TASK_BTNS.forEach(id => $(id).disabled = true);
+  setProgress(0);
+  const t0 = Date.now();
+  try { await fn(); log(`${name} finished in ${Math.round((Date.now() - t0) / 1000)}s.`); }
+  catch (e) {
+    if (e instanceof StopError) log(`${name} stopped.`, 'warn');
+    else log(e.message, 'err');
+  } finally {
+    running = false;
+    $('stopBtn').disabled = true;
+    TASK_BTNS.forEach(id => $(id).disabled = false);
+    setStatus('Idle');
+    render();
+    saveCache(); saveRows(); saveWatch();
+  }
+}
+
+async function fetchHof(cat, offset, limit = 100) {
+  const d = await api('/torn/hof', { cat, limit, offset });
+  if (d.error) throw new Error(`HoF error: ${d.error.error}`);
+  return d.hof || [];
+}
+
+// Scan pages starting at cursor.offset; updates cursor as it goes so "Continue" resumes exactly.
+async function scanPages() {
+  const pages = Math.max(1, +$('maxPages').value || 1);
+  const { cat, lvlMin } = cursor;
+  lastCat = cat;
+  for (let p = 0; p < pages; p++) {
+    setStatus(`Scanning <b>${esc(cat)}</b> page ${p + 1}/${pages} (from #${(cursor.offset + 1).toLocaleString()})`);
+    const hof = await fetchHof(cat, cursor.offset);
+    hof.forEach(h => upsertHof(h, cat));
+    cursor.offset += hof.length;
+    setProgress((p + 1) / pages);
+    scheduleRender();
+    if (hof.length < 100) { log('Reached the end of the Hall of Fame.'); cursor = null; return; }
+    if (lvlMin != null && hof[hof.length - 1].level < lvlMin) { log('Passed the bottom of the level band.'); cursor = null; return; }
+  }
+  log(`Scanned ${pages} page(s). Press "Continue ▸" to scan further from #${(cursor.offset + 1).toLocaleString()}.`);
+}
+
+async function scanCategory() {
+  cursor = { cat: $('cat').value, offset: Math.max(0, (+$('startPos').value || 1) - 1), lvlMin: null };
+  await scanPages();
+}
+
+async function scanLevelBand() {
+  const lvlMax = numOrNull('fLvlMax'), lvlMin = numOrNull('fLvlMin');
+  if (lvlMax == null || lvlMin == null) throw new Error('Set Level min and max (or click "Use my level") for level-band mode.');
+  const probeCache = new Map();
+  const probe = async off => {
+    if (probeCache.has(off)) return probeCache.get(off);
+    const h = await fetchHof('level', off, 1);
+    const lvl = h.length ? h[0].level : -1;  // -1 = past the end
+    probeCache.set(off, lvl);
+    return lvl;
+  };
+  // find first offset whose level <= lvlMax (Level HoF is sorted high -> low)
+  setStatus('Locating your level band…');
+  let lo = 0, hi = 1024;
+  while ((await probe(hi)) > lvlMax) { lo = hi; hi *= 2; if (hi > 1e8) break; }
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    const lvl = await probe(mid);
+    if (lvl !== -1 && lvl > lvlMax) lo = mid + 1; else hi = mid;
+    setStatus(`Locating level ${lvlMax} in HoF… (#${(lo + 1).toLocaleString()}–#${(hi + 1).toLocaleString()})`);
+  }
+  log(`Level ${lvlMax} and below starts around HoF #${(lo + 1).toLocaleString()} (${probeCache.size} probe calls).`);
+  cursor = { cat: 'level', offset: lo, lvlMin };
+  await scanPages();
+}
+
+async function enrich() {
+  const b = baseFilter(), d = detailFilter();
+  const cap = Math.max(1, +$('enrichCap').value || 1);
+  const watchView = $('fView').value === 'watch';
+  const lookAll = !d.active || watchView;   // no detail filters (or refreshing watchlist): look up everything shown
+  const todo = [...rows.values()].filter(r => b(r) && (lookAll ? !cacheFresh(r.id) : d.needsLookup(r))).slice(0, cap);
+  if (!todo.length) { log('Nothing to look up. Everything matching is already cached.'); return; }
+  const rpm = budget();
+  log(`Looking up ${todo.length} players (~${Math.ceil(todo.length / rpm)} min at ${rpm}/min).`);
+  let done = 0;
+  for (const r of todo) {
+    setStatus(`Looking up <b>${done + 1}/${todo.length}</b>: ${esc(r.name)}`);
+    const data = await api(`/user/${r.id}`, { selections: 'profile,job,personalstats', stat: 'networth' });
+    if (data.error) log(`Skipped ${r.name} [${r.id}]: ${data.error.error}`, 'warn');
+    else {
+      const slim = { profile: data.profile, job: data.job, personalstats: data.personalstats };
+      profileCache[r.id] = { t: Date.now(), d: slim };
+      applyEnriched(r, slim);
+    }
+    done++;
+    setProgress(done / todo.length);
+    if (done % 50 === 0) saveCache();
+    scheduleRender();
+  }
+}
+
+async function resolveFactions() {
+  const fresh = id => factions[id] && Date.now() - factions[id].t < 7 * 864e5;
+  const ids = [...new Set(visibleRows().map(r => r.faction_id).filter(id => id && !fresh(id)))].slice(0, 150);
+  if (!ids.length) { log('All faction names in view are already known.'); return; }
+  log(`Looking up ${ids.length} faction names…`);
+  let done = 0;
+  for (const id of ids) {
+    setStatus(`Faction <b>${done + 1}/${ids.length}</b>`);
+    const d = await api(`/faction/${id}/basic`);
+    if (!d.error && d.basic) factions[id] = { name: d.basic.name, tag: d.basic.tag, t: Date.now() };
+    done++;
+    setProgress(done / ids.length);
+    scheduleRender();
+  }
+  store.set('tps_factions', factions);
+}
+
+async function useMyLevel() {
+  const d = await api('/user/profile');
+  if (d.error) throw new Error(d.error.error);
+  const lvl = d.profile.level, s = Math.max(0, +$('levelSpread').value || 0);
+  $('fLvlMin').value = Math.max(1, lvl - s);
+  $('fLvlMax').value = Math.min(100, lvl + s);
+  saveForm();
+  log(`Your level is ${lvl}; level filter set to ${lvl - s}–${lvl + s}.`);
+}
+
+function withAutoLookup(scanFn) {
+  return async () => { await scanFn(); if ($('autoLookup').checked) await enrich(); };
+}
+
+// ---------- CSV / clipboard ----------
+function exportCsv() {
+  const vis = visibleRows();
+  const head = ['id', 'name', 'level', 'networth', `hof_${lastCat}`, 'hof_pos', 'last_action_utc', 'age_days', 'job', 'position', 'stars', 'company', 'faction_id', 'faction_name', 'status', 'donator', 'property', 'watched', 'note'];
+  const q = v => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  const lines = [head.join(',')].concat(vis.map(r => [
+    r.id, r.name, r.level, r.networth, r.hof[lastCat]?.value, r.hof[lastCat]?.pos,
+    r.last_action ? new Date(r.last_action * 1000).toISOString() : '', r.age,
+    r.jobLabel, r.position, r.stars, r.company, r.faction_id, factions[r.faction_id]?.name, r.status, r.donator, r.property,
+    watch[r.id] ? 'yes' : '', watch[r.id]?.note
+  ].map(q).join(',')));
+  download(`torn-players-${new Date().toISOString().slice(0, 10)}.csv`, lines.join('\n'), 'text/csv');
+}
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+async function copyIds() {
+  const ids = visibleRows().map(r => r.id).join(',');
+  try { await navigator.clipboard.writeText(ids); }
+  catch { const t = document.createElement('textarea'); t.value = ids; document.body.append(t); t.select(); document.execCommand('copy'); t.remove(); }
+  toast(`Copied ${visibleRows().length} IDs`);
+}
+
+// ---------- form persistence + presets ----------
+const FORM_FIELDS = ['rpm','mode','cat','startPos','maxPages','levelSpread','fView','fLvlMin','fLvlMax','fLaMin','fLaMax','fLaUnit','fAgeMin','fAgeMax','fFaction','fFactionId','fName','fNwMin','fNwMax','fPos','fStars','fDonator','fProp','enrichCap','cacheHours'];
+const FILTER_FIELDS = ['fLvlMin','fLvlMax','fLaMin','fLaMax','fAgeMin','fAgeMax','fFaction','fFactionId','fName','fNwMin','fNwMax','fPos','fStars','fDonator','fProp'];
+function getForm() {
+  const o = {}; FORM_FIELDS.forEach(id => o[id] = $(id).value);
+  o.fJob = [...$('fJob').selectedOptions].map(x => x.value);
+  o.fStatus = [...document.querySelectorAll('#fStatus input:checked')].map(i => i.value);
+  o.autoLookup = $('autoLookup').checked;
+  return o;
+}
+function setForm(o, fields = FORM_FIELDS) {
+  fields.forEach(id => { if (o[id] != null) $(id).value = o[id]; });
+  if (o.fJob) [...$('fJob').options].forEach(op => op.selected = o.fJob.includes(op.value));
+  if (o.fStatus) document.querySelectorAll('#fStatus input').forEach(i => i.checked = o.fStatus.includes(i.value));
+  if (o.autoLookup != null) $('autoLookup').checked = o.autoLookup;
+  syncMode();
+}
+function saveForm() { store.set('tps_form', getForm()); }
+function loadForm() { const o = store.get('tps_form', null); if (o) setForm(o); }
+
+function resetFilters() {
+  FILTER_FIELDS.forEach(id => $(id).value = '');
+  $('fLaUnit').value = '86400';
+  $('fView').value = 'all';
+  [...$('fJob').options].forEach(o => o.selected = false);
+  document.querySelectorAll('#fStatus input').forEach(i => i.checked = false);
+  saveForm(); render();
+}
+
+function buildPresetSel() {
+  const sel = $('presetSel'), cur = sel.value;
+  sel.innerHTML = '<option value="">Saved presets…</option>' + Object.keys(presets).sort().map(n => `<option>${esc(n)}</option>`).join('');
+  if (presets[cur]) sel.value = cur;
+}
+$('presetSel').addEventListener('change', e => {
+  const p = presets[e.target.value]; if (!p) return;
+  setForm(p); saveForm(); render(); toast(`Loaded "${e.target.value}"`);
+});
+$('presetSave').addEventListener('click', () => {
+  const name = prompt('Name for this preset (scan settings + all filters):', $('presetSel').value || '');
+  if (!name || !name.trim()) return;
+  const o = getForm(); delete o.rpm;
+  presets[name.trim()] = o;
+  store.set('tps_presets', presets); buildPresetSel(); $('presetSel').value = name.trim(); toast('Preset saved');
+});
+$('presetDel').addEventListener('click', () => {
+  const n = $('presetSel').value; if (!n) return;
+  if (!confirm(`Delete preset "${n}"?`)) return;
+  delete presets[n]; store.set('tps_presets', presets); buildPresetSel();
+});
+
+// Quick one-click filters that only touch the fields they're about.
+const QUICK = [
+  { label: 'Online < 1h', set: { fLaMin: '', fLaMax: '1', fLaUnit: '3600' } },
+  { label: 'Active < 24h', set: { fLaMin: '', fLaMax: '1', fLaUnit: '86400' } },
+  { label: 'Active < 7d', set: { fLaMin: '', fLaMax: '7', fLaUnit: '86400' } },
+  { label: 'Inactive 30d+', set: { fLaMin: '30', fLaMax: '', fLaUnit: '86400' } },
+  { label: 'Factionless', set: { fFaction: 'none' } },
+  { label: 'Unemployed', set: { fJob: ['none'] } },
+  { label: 'City jobs', set: { fJob: CITY_JOBS.map(j => 'j' + j) } },
+  { label: 'Okay (attackable)', set: { fStatus: ['Okay'] } },
+  { label: 'Networth ≥ 1b', set: { fNwMin: '1b' } },
+  { label: 'New (< 1 yr)', set: { fAgeMin: '', fAgeMax: '365' } },
+  { label: 'Veteran (5+ yrs)', set: { fAgeMin: '1825', fAgeMax: '' } },
+];
+function buildChips() {
+  $('quickChips').innerHTML = QUICK.map((q, i) => `<span class="chip" data-q="${i}">${esc(q.label)}</span>`).join('');
+}
+$('quickChips').addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  const q = QUICK[+c.dataset.q];
+  setForm(q.set, Object.keys(q.set).filter(k => FORM_FIELDS.includes(k)));
+  saveForm(); render(); toast(q.label);
+});
+
+// ---------- watchlist import / export ----------
+$('watchExport').addEventListener('click', () => {
+  download(`torn-watchlist-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ watch, hidden }, null, 1), 'application/json');
+});
+$('watchImportBtn').addEventListener('click', () => $('watchImport').click());
+$('watchImport').addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    const o = JSON.parse(await file.text());
+    let n = 0;
+    for (const [id, w] of Object.entries(o.watch || {})) {
+      if (!/^\d+$/.test(id)) continue;
+      watch[id] = { name: String(w.name || id).slice(0, 40), note: String(w.note || '').slice(0, 500), t: +w.t || Date.now() }; n++;
+    }
+    for (const [id, name] of Object.entries(o.hidden || {})) if (/^\d+$/.test(id)) hidden[id] = String(name).slice(0, 40);
+    saveWatch(); saveHidden(); ensureWatchRows(); render();
+    toast(`Imported ${n} watched players`);
+  } catch (err) { log('Import failed: ' + err.message, 'err'); }
+  e.target.value = '';
+});
+$('unhideAll').addEventListener('click', () => {
+  const n = Object.keys(hidden).length; if (!n) return;
+  if (!confirm(`Un-hide ${n} players?`)) return;
+  hidden = {}; saveHidden(); render();
+});
+
+// ---------- UI wiring ----------
+function buildJobSelect() {
+  const sel = $('fJob');
+  const g1 = document.createElement('optgroup'); g1.label = 'City jobs';
+  CITY_JOBS.forEach(j => g1.append(new Option(j, 'j' + j)));
+  g1.append(new Option('Unemployed', 'none'));
+  const g2 = document.createElement('optgroup'); g2.label = 'Companies';
+  Object.entries(COMPANY_TYPES).sort((a, b) => a[1].localeCompare(b[1])).forEach(([id, n]) => g2.append(new Option(n, 'c' + id)));
+  sel.append(g1, g2);
+  $('fStatus').innerHTML = STATUSES.map(s => `<label><input type="checkbox" value="${s}">${s}</label>`).join('');
+}
+
+function syncMode() {
+  const band = $('mode').value === 'levelband';
+  $('catOpts').hidden = band; $('bandOpts').hidden = !band;
+}
+
+const scanFn = () => withAutoLookup($('mode').value === 'levelband' ? scanLevelBand : scanCategory);
+document.querySelector('aside').addEventListener('input', () => { saveForm(); scheduleRender(); });
+document.querySelector('aside').addEventListener('change', () => { saveForm(); scheduleRender(); });
+$('mode').addEventListener('change', syncMode);
+$('saveKey').addEventListener('click', saveKey);
+$('apiKey').addEventListener('keydown', e => { if (e.key === 'Enter') saveKey(); });
+$('rememberKey').addEventListener('change', () => { if (!$('rememberKey').checked) store.del('tps_key'); else if (apiKey) store.set('tps_key', apiKey); });
+$('rpm').addEventListener('change', () => { $('rpm').value = budget(); });
+$('scanBtn').addEventListener('click', () => runTask('Scan', scanFn()));
+$('continueBtn').addEventListener('click', () => { if (cursor) runTask('Continue', withAutoLookup(scanPages)); });
+$('enrichBtn').addEventListener('click', () => runTask('Lookup', enrich));
+$('factionBtn').addEventListener('click', () => runTask('Faction names', resolveFactions));
+$('myLevelBtn').addEventListener('click', () => runTask('My level', useMyLevel));
+$('stopBtn').addEventListener('click', () => { stopFlag = true; });
+$('resetFilters').addEventListener('click', resetFilters);
+$('clearBtn').addEventListener('click', () => {
+  if (rows.size && !confirm('Clear all scanned results? (Cached lookups, watchlist and notes are kept.)')) return;
+  rows.clear(); cursor = null; ensureWatchRows(); render(); saveRows();
+});
+$('clearCacheBtn').addEventListener('click', () => {
+  profileCache = {}; saveCache();
+  rows.forEach(r => { delete r.enriched; });
+  log('Lookup cache cleared.'); render();
+});
+$('csvBtn').addEventListener('click', exportCsv);
+$('copyIdsBtn').addEventListener('click', copyIds);
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && running) { stopFlag = true; e.preventDefault(); }
+  else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !running) { runTask('Scan', scanFn()); e.preventDefault(); }
+  else if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { $('fName').focus(); e.preventDefault(); }
+});
+
+// ---------- init ----------
+(async function init() {
+  buildJobSelect();
+  buildChips();
+  buildColMenu();
+  buildPresetSel();
+  loadForm();
+  saveWatch();
+  if (apiKey) { $('apiKey').value = apiKey; $('keyInfo').className = 'keyinfo ok'; $('keyInfo').textContent = 'Key loaded from this browser.'; }
+
+  // one-time migration from the old localStorage cache
+  const legacy = store.get('tps_cache', null);
+  profileCache = (await idb.get('cache')) || legacy || {};
+  if (legacy) { store.del('tps_cache'); saveCache(); }
+
+  const saved = await idb.get('rows');
+  if (Array.isArray(saved)) saved.forEach(r => { if (r && r.id) rows.set(r.id, r); });
+  const meta = await idb.get('meta');
+  if (meta) { lastCat = meta.lastCat || lastCat; cursor = meta.cursor || null; }
+  ensureWatchRows();
+  if (rows.size) log(`Restored ${rows.size.toLocaleString()} players from your last session.`);
+  render();
+})();
+</script>
+</body>
+</html>
