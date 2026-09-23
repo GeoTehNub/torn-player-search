@@ -971,7 +971,8 @@ function readFilters() {
   };
 }
 // optimistic: a not-yet-checked player "could match" anything a check would reveal (used to pick who to check).
-function matches(r, f, optimistic = false, ignoreStrength = false) {
+// strictStrength: when picking who to check, a player whose strength is still unknown doesn't pass strength filters.
+function matches(r, f, optimistic = false, ignoreStrength = false, strictStrength = false) {
   if (f.view === 'watch' ? !watch[r.id] : f.view === 'hidden' ? !hidden[r.id] : (hidden[r.id] || r.stub)) return false;
   const unknown = !r.checkedAt;
   const may = unknown && optimistic;
@@ -989,10 +990,11 @@ function matches(r, f, optimistic = false, ignoreStrength = false) {
   // strength
   if (!ignoreStrength) {
     const ffv = fairFight(r)?.ff;
-    if (f.ffMax != null && (ffv == null ? !may : ffv > f.ffMax)) return false;   // unknown strength can't pass a Fair Fight limit
+    const mayStrength = may && !strictStrength;
+    if (f.ffMax != null && (ffv == null ? !mayStrength : ffv > f.ffMax)) return false;   // unknown strength can't pass a Fair Fight limit
     const s = statRange(r);
     if (f.bsMax != null && s && s.min > f.bsMax) return false;
-    if (f.knownOnly && ffv == null && !s && !may) return false;
+    if (f.knownOnly && ffv == null && !s && !mayStrength) return false;
   }
   // cash (needs a check)
   if (f.nwMin != null && r.networth != null && r.networth < f.nwMin) return false;   // networth is known free from the net worth list
@@ -1010,7 +1012,9 @@ function matches(r, f, optimistic = false, ignoreStrength = false) {
 function visibleRows() { const f = readFilters(); return [...rows.values()].filter(r => matches(r, f)); }
 function checkCandidates() {
   const f = readFilters(), out = [];
-  for (const r of rows.values()) if (!isCheckFresh(r.id) && matches(r, f, true)) out.push(r);
+  // Only players inside the current filters. Cash filters need the check itself, so unchecked players may pass those;
+  // strength filters are strict once FFScouter is set up (Fair Fight is fetched before checking).
+  for (const r of rows.values()) if (!isCheckFresh(r.id) && matches(r, f, true, false, !!ffsKey)) out.push(r);
   // check the most promising first: known bazaar owners, then active, then the rest
   const pri = r => (r.hasBazaar ? 2 : 0) + (r.bzWeeklyIncome ? 2 : 0) + (r.online && r.online !== 'Offline' ? 1 : 0);
   return out.sort((a, b) => pri(b) - pri(a));
@@ -1409,8 +1413,9 @@ function continueFn() {
 function withFollowUps(fn) {
   return async () => {
     await fn();
-    if ($('autoCheck').checked) await checkPlayers();
+    // Fair Fight first: it's cheap (205 per request, no Torn budget) and lets strength filters narrow who gets checked.
     if ($('ffsAuto').checked && ffsKey) await fetchFfs();
+    if ($('autoCheck').checked) await checkPlayers();
   };
 }
 
